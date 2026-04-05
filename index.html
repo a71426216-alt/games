@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎮 게임 모음</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+  .container {
+    text-align: center;
+    padding: 40px 20px;
+    max-width: 600px;
+    width: 100%;
+  }
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    background: linear-gradient(90deg, #f7971e, #ffd200);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    color: #aaa;
+    margin-bottom: 48px;
+    font-size: 1.1rem;
+  }
+  .games {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .game-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 24px 28px;
+    text-decoration: none;
+    color: #fff;
+    transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+  }
+  .game-card:hover {
+    transform: translateY(-4px);
+    background: rgba(255,255,255,0.12);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .game-icon {
+    font-size: 2.8rem;
+    flex-shrink: 0;
+  }
+  .game-info { text-align: left; }
+  .game-info h2 {
+    font-size: 1.3rem;
+    margin-bottom: 4px;
+  }
+  .game-info p {
+    color: #999;
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🎮 게임 모음</h1>
+  <p class="subtitle">플레이할 게임을 선택하세요!</p>
+  <div class="games">
+    <a class="game-card" href="jujutsu_kaisen_game.html">
+      <span class="game-icon">👹</span>
+      <div class="game-info">
+        <h2>주술회전 게임</h2>
+        <p>주술사가 되어 저주를 물리치자!</p>
+      </div>
+    </a>
+    <a class="game-card" href="sword_game.html">
+      <span class="game-icon">⚔️</span>
+      <div class="game-info">
+        <h2>검술 게임</h2>
+        <p>검을 들고 적을 베어라!</p>
+      </div>
+    </a>
+    <a class="game-card" href="japan_song_quiz.html">
+      <span class="game-icon">🎵</span>
+      <div class="game-info">
+        <h2>일본 노래 퀴즈</h2>
+        <p>일본 노래를 듣고 맞춰보세요!</p>
+      </div>
+    </a>
+  </div>
+</div>
+</body>
+</html>
