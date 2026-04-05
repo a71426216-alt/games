@@ -151,7 +151,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 footer{margin-top:auto;padding-top:28px;text-align:center;font-size:.65rem;color:#52525b;line-height:1.65;max-width:34em;margin-left:auto;margin-right:auto}
 
-.yt-hide{position:fixed;bottom:0;left:0;width:1px;height:1px;overflow:hidden;opacity:.01;pointer-events:none;z-index:-1}
+.yt-hide{position:fixed;bottom:0;left:0;width:320px;height:180px;overflow:hidden;opacity:0;pointer-events:none;z-index:-1;transition:opacity .3s}
+.yt-hide.show-ad{opacity:1;pointer-events:auto;z-index:9999;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
 
 .api-error{text-align:center;padding:20px;font-size:.82rem;color:#f87171;line-height:1.6}
 .api-error a{color:#818cf8;text-decoration:underline}
@@ -304,7 +305,7 @@ function onYouTubeIframeAPIReady() {
   clearTimeout(apiTimeout);
   player = new YT.Player('yt-player', {
     width:200, height:112,
-    playerVars:{ autoplay:0, controls:0, disablekb:1, modestbranding:1, playsinline:1, rel:0, origin:location.origin, enablejsapi:1 },
+    playerVars:{ autoplay:0, controls:1, disablekb:1, modestbranding:1, playsinline:1, rel:0, origin:location.origin, enablejsapi:1 },
     events:{
       onReady() { ytReady = true; },
       onStateChange: onState,
@@ -313,8 +314,25 @@ function onYouTubeIframeAPIReady() {
   });
 }
 
+const ytWrap = document.querySelector('.yt-hide');
+let expectedVid = '';
+
+function isAdPlaying() {
+  try {
+    const url = player.getVideoUrl();
+    return expectedVid && !url.includes(expectedVid);
+  } catch(e) { return false; }
+}
+
 function onState(e) {
   if (e.data === YT.PlayerState.PLAYING) {
+    if (isAdPlaying()) {
+      ytWrap.classList.add('show-ad');
+      $('sound-note').textContent = '⏳ 광고 재생 중 — 건너뛰기를 눌러주세요';
+      $('sound-note').style.display = '';
+      return;
+    }
+    ytWrap.classList.remove('show-ad');
     disc.classList.remove('buffering');
     disc.classList.add('spinning');
     currentlyPlaying = true;
@@ -360,6 +378,7 @@ function stopAudio() {
   }
   currentlyPlaying = false;
   disc.classList.remove('spinning','buffering');
+  ytWrap.classList.remove('show-ad');
 }
 
 function showReplayBtn() {
@@ -373,6 +392,7 @@ function showReplayBtn() {
 function playCurrentSong() {
   const q = order[idx];
   if (!player || !ytReady) { btnPlay.textContent = '로딩 중…'; return; }
+  expectedVid = q.vid;
   btnPlay.disabled = true;
   btnPlay.textContent = '재생 중…';
   disc.classList.add('buffering');
