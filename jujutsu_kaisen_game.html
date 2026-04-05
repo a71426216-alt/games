@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>주술회전 - 주술 배틀 게임</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #0a0a0f; color: #e0e0e0;
+    min-height: 100vh; overflow-x: hidden;
+  }
+  .bg-effect {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(88,28,135,.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 50%, rgba(157,23,77,.12) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+  .container { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 20px; }
+
+  h1 {
+    text-align: center; font-size: 2.2rem; font-weight: 900;
+    background: linear-gradient(135deg, #a855f7, #ec4899, #f43f5e);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 5px;
+  }
+  .subtitle { text-align: center; font-size: .9rem; color: #888; margin-bottom: 30px; letter-spacing: 4px; }
+
+  .section-label { color: #ccc; font-weight: 700; margin-bottom: 10px; font-size: .95rem; }
+
+  .char-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+  .char-card {
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+    border: 2px solid #2a2a4a; border-radius: 14px; padding: 14px;
+    cursor: pointer; transition: all .3s; position: relative; overflow: hidden;
+  }
+  .char-card:hover { border-color: #a855f7; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(168,85,247,.2); }
+  .char-card.selected { border-color: #ec4899; box-shadow: 0 0 20px rgba(236,72,153,.3); }
+  .char-grade { position: absolute; top: 8px; right: 10px; font-size: .6rem; padding: 2px 8px; border-radius: 6px; font-weight: 700; }
+  .grade-special { background: #7c3aed33; color: #a855f7; border: 1px solid #7c3aed; }
+  .grade-1 { background: #f43f5e22; color: #f43f5e; border: 1px solid #f43f5e55; }
+  .char-name { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .char-stats { font-size: .72rem; color: #aaa; line-height: 1.6; }
+  .char-stats span { color: #a855f7; font-weight: 700; }
+  .char-skills { font-size: .68rem; color: #ec4899; margin-top: 4px; }
+  .char-passive { font-size: .65rem; color: #facc15; margin-top: 3px; font-style: italic; }
+
+  .diff-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 22px; }
+  .diff-card {
+    background: #1a1a2e; border: 2px solid #2a2a4a; border-radius: 10px;
+    padding: 12px 6px; text-align: center; cursor: pointer; transition: all .3s;
+  }
+  .diff-card:hover { border-color: #f43f5e; transform: translateY(-2px); }
+  .diff-card.selected { border-color: #f43f5e; box-shadow: 0 0 15px rgba(244,63,94,.3); }
+  .diff-emoji { font-size: 1.4rem; }
+  .diff-label { font-size: .7rem; font-weight: 700; margin-top: 5px; color: #fff; }
+  .diff-sub { font-size: .6rem; color: #888; margin-top: 2px; }
+
+  .btn-start {
+    display: block; width: 100%; padding: 16px; font-size: 1.2rem; font-weight: 900;
+    background: linear-gradient(135deg, #7c3aed, #ec4899);
+    color: #fff; border: none; border-radius: 12px; cursor: pointer;
+    transition: all .3s; letter-spacing: 2px;
+  }
+  .btn-start:hover { transform: scale(1.02); box-shadow: 0 6px 25px rgba(124,58,237,.4); }
+  .btn-start:disabled { opacity: .4; cursor: default; transform: none; box-shadow: none; }
+
+  #battle-screen { display: none; }
+  .battle-field {
+    background: linear-gradient(180deg, #0f0f1a, #1a0a2e);
+    border: 2px solid #2a2a4a; border-radius: 16px;
+    padding: 20px; margin-bottom: 12px;
+  }
+  .fighter-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .fighter-box { flex: 1; }
+  .fighter-box.right { text-align: right; }
+  .fighter-label { font-size: .65rem; color: #888; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 2px; }
+  .fighter-name { font-size: 1.2rem; font-weight: 900; color: #fff; }
+  .fighter-name.enemy-name { color: #f43f5e; }
+  .vs-text { font-size: 1.4rem; font-weight: 900; color: #7c3aed; text-shadow: 0 0 20px rgba(124,58,237,.5); padding: 0 12px; }
+
+  .status-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .hp-section { margin-bottom: 10px; }
+  .hp-label { display: flex; justify-content: space-between; font-size: .75rem; margin-bottom: 3px; color: #ccc; }
+  .hp-bar-bg { width: 100%; height: 20px; background: #1a1a2e; border-radius: 10px; overflow: hidden; border: 1px solid #333; }
+  .hp-bar-fill { height: 100%; border-radius: 10px; transition: width .5s ease; }
+  .hp-bar-fill.player-hp { background: linear-gradient(90deg, #22c55e, #4ade80); }
+  .hp-bar-fill.player-mp { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+  .hp-bar-fill.enemy-hp { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+  .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .turn-label { font-size: .85rem; font-weight: 700; color: #a855f7; }
+  .item-info { font-size: .75rem; color: #4ade80; }
+  .awakened-badge {
+    display: inline-block; font-size: .7rem; font-weight: 700; padding: 2px 10px;
+    border-radius: 6px; background: linear-gradient(90deg, #f43f5e, #facc15);
+    color: #000; animation: pulse 1s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .6; } }
+  .buff-badge {
+    display: inline-block; font-size: .65rem; font-weight: 700; padding: 2px 8px;
+    border-radius: 6px; margin-left: 6px;
+  }
+  .buff-atk { background: #f43f5e33; color: #f87171; border: 1px solid #f43f5e55; }
+  .buff-def { background: #3b82f633; color: #60a5fa; border: 1px solid #3b82f655; }
+
+  .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .action-btn {
+    background: #1a1a2e; border: 2px solid #333; border-radius: 10px;
+    padding: 12px 10px; cursor: pointer; transition: all .25s; text-align: left;
+  }
+  .action-btn:hover:not(:disabled) { border-color: #a855f7; background: #1f1f3a; box-shadow: 0 4px 15px rgba(168,85,247,.15); }
+  .action-btn:disabled { opacity: .3; cursor: default; }
+  .action-btn .act-name { font-size: .85rem; font-weight: 700; color: #fff; }
+  .action-btn .act-desc { font-size: .65rem; color: #aaa; margin-top: 3px; }
+  .action-btn .act-cost { font-size: .65rem; color: #60a5fa; margin-top: 2px; }
+  .action-btn.heal-btn .act-name { color: #4ade80; }
+  .action-btn.def-btn .act-name { color: #60a5fa; }
+  .action-btn.item-btn .act-name { color: #facc15; }
+
+  .log-box {
+    background: #111118; border: 1px solid #222; border-radius: 12px;
+    padding: 14px; max-height: 200px; overflow-y: auto; font-size: .8rem; line-height: 1.8;
+  }
+  .log-box .log-player { color: #a855f7; }
+  .log-box .log-enemy { color: #f43f5e; }
+  .log-box .log-crit { color: #facc15; font-weight: 700; }
+  .log-box .log-info { color: #60a5fa; }
+  .log-box .log-heal { color: #4ade80; }
+  .log-box .log-dodge { color: #818cf8; font-style: italic; }
+  .log-box .log-awaken { color: #facc15; font-weight: 900; font-size: .95rem; }
+  .log-box .log-win { color: #4ade80; font-weight: 700; font-size: 1rem; }
+  .log-box .log-lose { color: #ef4444; font-weight: 700; font-size: 1rem; }
+
+  #result-screen { display: none; text-align: center; padding: 40px 0; }
+  .result-emoji { font-size: 4rem; margin-bottom: 16px; }
+  .result-text { font-size: 1.8rem; font-weight: 900; margin-bottom: 10px; }
+  .result-sub { font-size: 1rem; color: #aaa; margin-bottom: 30px; }
+  .btn-retry {
+    padding: 14px 40px; font-size: 1rem; font-weight: 700;
+    background: linear-gradient(135deg, #7c3aed, #ec4899);
+    color: #fff; border: none; border-radius: 10px; cursor: pointer; transition: all .3s;
+  }
+  .btn-retry:hover { transform: scale(1.05); }
+
+  .shake { animation: shake .4s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+  .flash-hit { animation: flashHit .3s ease; }
+  @keyframes flashHit { 0% { filter: brightness(1); } 50% { filter: brightness(2.5) saturate(2); } 100% { filter: brightness(1); } }
+  .domain-flash { animation: domainFlash .8s ease; }
+  @keyframes domainFlash {
+    0% { box-shadow: inset 0 0 0 rgba(124,58,237,0); }
+    30% { box-shadow: inset 0 0 60px rgba(124,58,237,.6); }
+    60% { box-shadow: inset 0 0 80px rgba(236,72,153,.4); }
+    100% { box-shadow: inset 0 0 0 rgba(124,58,237,0); }
+  }
+</style>
+</head>
+<body>
+<div class="bg-effect"></div>
+<div class="container">
+
+  <div id="select-screen">
+    <h1>주술회전</h1>
+    <div class="subtitle">呪術廻戦 JUJUTSU BATTLE</div>
+
+    <div class="section-label">🧑 주술사를 선택하세요</div>
+    <div class="char-grid" id="char-grid"></div>
+
+    <div class="section-label">👹 임무를 선택하세요</div>
+    <div class="diff-grid" id="diff-grid"></div>
+
+    <button class="btn-start" id="btn-start" disabled onclick="startBattle()">전투 시작</button>
+  </div>
+
+  <div id="battle-screen">
+    <div class="battle-field" id="battle-field">
+      <div class="fighter-row">
+        <div class="fighter-box">
+          <div class="fighter-label">주술사</div>
+          <div class="fighter-name" id="p-name"></div>
+        </div>
+        <div class="vs-text">VS</div>
+        <div class="fighter-box right">
+          <div class="fighter-label">저주령</div>
+          <div class="fighter-name enemy-name" id="e-name"></div>
+        </div>
+      </div>
+      <div class="status-row">
+        <div>
+          <div class="hp-section">
+            <div class="hp-label"><span>❤️ HP</span><span id="p-hp-val"></span></div>
+            <div class="hp-bar-bg"><div class="hp-bar-fill player-hp" id="p-hp-bar"></div></div>
+          </div>
+          <div class="hp-section">
+            <div class="hp-label"><span>💧 MP</span><span id="p-mp-val"></span></div>
+            <div class="hp-bar-bg"><div class="hp-bar-fill player-mp" id="p-mp-bar"></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="hp-section">
+            <div class="hp-label"><span>👹 HP</span><span id="e-hp-val"></span></div>
+            <div class="hp-bar-bg"><div class="hp-bar-fill enemy-hp" id="e-hp-bar"></div></div>
+          </div>
+          <div id="buffs-area" style="min-height:28px; margin-top:6px;"></div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="turn-label" id="turn-label">턴 1</div>
+        <div><span class="item-info" id="potion-info"></span></div>
+      </div>
+    </div>
+    <div class="action-grid" id="action-grid"></div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+
+  <div id="result-screen">
+    <div class="result-emoji" id="result-emoji"></div>
+    <div class="result-text" id="result-text"></div>
+    <div class="result-sub" id="result-sub"></div>
+    <button class="btn-retry" onclick="resetGame()">다시 하기</button>
+  </div>
+
+</div>
+<script>
+const CHARACTERS = [
+  {
+    name:"이타도리 유지", hp:150, attack:28, defense:12, maxMp:100, evasion:0.10, critRate:0.15,
+    grade:"특급", gradeClass:"grade-special",
+    passive:"각성 시 흑섬 연타 (ATK x1.8)",
+    skills:[
+      {name:"축권", damage:50, cost:18, desc:"주술을 담은 강력한 주먹!", isDomain:false},
+      {name:"흑섬", damage:80, cost:38, desc:"연속 타격의 폭풍!", isDomain:false},
+    ]
+  },
+  {
+    name:"고조 사토루", hp:130, attack:35, defense:18, maxMp:140, evasion:0.25, critRate:0.15,
+    grade:"특급", gradeClass:"grade-special",
+    passive:"무하: 25% 확률로 공격 완전 회피",
+    skills:[
+      {name:"허식 자주", damage:60, cost:22, desc:"수렴과 발산의 힘!", isDomain:false},
+      {name:"무량공처", damage:110, cost:55, desc:"영역전개! 무한의 공간!", isDomain:true},
+    ]
+  },
+  {
+    name:"후시구로 메구미", hp:140, attack:24, defense:14, maxMp:110, evasion:0.12, critRate:0.12,
+    grade:"1급", gradeClass:"grade-1",
+    passive:"식신으로 방어 +5 (상시)",
+    skills:[
+      {name:"옥견 혼", damage:42, cost:14, desc:"식신 쌍흑견 소환!", isDomain:false},
+      {name:"기은도해", damage:95, cost:50, desc:"영역전개! 그림자의 바다!", isDomain:true},
+    ]
+  },
+  {
+    name:"오코츠 유타", hp:145, attack:30, defense:14, maxMp:160, evasion:0.10, critRate:0.18,
+    grade:"특급", gradeClass:"grade-special",
+    passive:"리카: MP 자연회복 +10",
+    skills:[
+      {name:"술식 모사", damage:55, cost:18, desc:"상대의 술식을 복사!", isDomain:false},
+      {name:"리카 해방", damage:100, cost:50, desc:"완전현현! 순애의 과주!", isDomain:true},
+    ]
+  },
+  {
+    name:"나나미 켄토", hp:155, attack:30, defense:15, maxMp:90, evasion:0.08, critRate:0.30,
+    grade:"1급", gradeClass:"grade-1",
+    passive:"7:3 비율: 크리티컬 확률 30%",
+    skills:[
+      {name:"비율술식", damage:55, cost:16, desc:"약점의 7:3 비율을 강제!", isDomain:false},
+      {name:"봉인 참격", damage:75, cost:32, desc:"넥타이를 풀었다... 시간외 근무!", isDomain:false},
+    ]
+  },
+  {
+    name:"토도 아오이", hp:170, attack:32, defense:13, maxMp:100, evasion:0.08, critRate:0.12,
+    grade:"1급", gradeClass:"grade-1",
+    passive:"부기우기: 15% 확률로 위치교환 회피",
+    skills:[
+      {name:"부기우기", damage:48, cost:15, desc:"박수! 위치를 교환하고 기습!", isDomain:false},
+      {name:"혼신의 일격", damage:90, cost:40, desc:"나의 베스트 프렌드!", isDomain:false},
+    ]
+  },
+  {
+    name:"젠인 마키", hp:180, attack:34, defense:16, maxMp:60, evasion:0.05, critRate:0.15,
+    grade:"특급", gradeClass:"grade-special",
+    passive:"천여체: 주력 불필요, 기본 ATK 최강",
+    skills:[
+      {name:"유주찬격", damage:55, cost:10, desc:"특수 주구로 일격!", isDomain:false},
+      {name:"삼절곤 난무", damage:80, cost:25, desc:"압도적 신체능력의 연격!", isDomain:false},
+    ]
+  },
+  {
+    name:"하카리 킨지", hp:160, attack:26, defense:12, maxMp:120, evasion:0.12, critRate:0.10,
+    grade:"1급", gradeClass:"grade-1",
+    passive:"잭팟: 스킬 사용 시 25% 확률 무한 MP + HP 회복",
+    skills:[
+      {name:"사영연무", damage:50, cost:20, desc:"파칭코 연출 발동!", isDomain:false},
+      {name:"좌사도 일기당천", damage:85, cost:42, desc:"영역전개! 도박사의 영역!", isDomain:true},
+    ]
+  },
+];
+
+const CURSES = [
+  {name:"저주령 무리", hp:120, attack:16, defense:6,
+    skills:["저주 파동","독안개","돌진"], emoji:"👻", label:"4급 임무", sub:"쉬움"},
+  {name:"특급 저주령 - 하나미", hp:180, attack:22, defense:10,
+    skills:["초목조례","화휘","뿌리 공격","자연의 분노"], emoji:"🌿", label:"2급 임무", sub:"보통"},
+  {name:"특급 저주령 - 조고", hp:220, attack:28, defense:10,
+    skills:["영혼의 변형","흑점선","자기수복","화산 분출"], emoji:"🔥", label:"1급 임무", sub:"어려움"},
+  {name:"스쿠나 (손가락 4개)", hp:260, attack:32, defense:12,
+    skills:["해체","봉인","개","역린"], emoji:"💀", label:"특급 임무", sub:"매우 어려움"},
+  {name:"스쿠나 (전성기)", hp:380, attack:38, defense:14,
+    skills:["해체","봉인","개","복마전신","세계단","영역전개: 복마전신"], emoji:"👹", label:"스쿠나전", sub:"지옥"},
+];
+
+let selectedChar = null, selectedDiff = null;
+let pHp, pMaxHp, pMp, pMaxMp, eHp, eMaxHp;
+let player, enemy, turn, battleOver;
+let potions, awakened, defending, atkBuff, defBuff;
+
+function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+
+function buildSelectScreen() {
+  const cg = document.getElementById('char-grid');
+  CHARACTERS.forEach((c, i) => {
+    const card = document.createElement('div');
+    card.className = 'char-card';
+    card.innerHTML = `
+      <div class="char-grade ${c.gradeClass}">${c.grade}</div>
+      <div class="char-name">${c.name}</div>
+      <div class="char-stats">HP <span>${c.hp}</span> ATK <span>${c.attack}</span> DEF <span>${c.defense}</span> MP <span>${c.maxMp}</span> EVA <span>${Math.round(c.evasion*100)}%</span> CRIT <span>${Math.round(c.critRate*100)}%</span></div>
+      <div class="char-skills">${c.skills.map(s=>s.name).join(' / ')}</div>
+      <div class="char-passive">⭐ ${c.passive}</div>
+    `;
+    card.onclick = () => {
+      document.querySelectorAll('.char-card').forEach(el=>el.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedChar = i; checkReady();
+    };
+    cg.appendChild(card);
+  });
+  const dg = document.getElementById('diff-grid');
+  CURSES.forEach((c, i) => {
+    const card = document.createElement('div');
+    card.className = 'diff-card';
+    card.innerHTML = `<div class="diff-emoji">${c.emoji}</div><div class="diff-label">${c.label}</div><div class="diff-sub">${c.sub}</div>`;
+    card.onclick = () => {
+      document.querySelectorAll('.diff-card').forEach(el=>el.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedDiff = i; checkReady();
+    };
+    dg.appendChild(card);
+  });
+}
+
+function checkReady() {
+  document.getElementById('btn-start').disabled = (selectedChar===null || selectedDiff===null);
+}
+
+function startBattle() {
+  player = JSON.parse(JSON.stringify(CHARACTERS[selectedChar]));
+  enemy  = JSON.parse(JSON.stringify(CURSES[selectedDiff]));
+  pHp = player.hp; pMaxHp = player.hp;
+  pMp = player.maxMp; pMaxMp = player.maxMp;
+  eHp = enemy.hp; eMaxHp = enemy.hp;
+  turn = 1; battleOver = false;
+  potions = 3; awakened = false; defending = false;
+  atkBuff = 0; defBuff = 0;
+
+  document.getElementById('select-screen').style.display = 'none';
+  document.getElementById('battle-screen').style.display = 'block';
+  document.getElementById('p-name').textContent = player.name;
+  document.getElementById('e-name').textContent = enemy.name;
+  document.getElementById('log-box').innerHTML = '';
+
+  addLog(`⚔️ ${player.name} vs ${enemy.name} — 전투 시작!`, 'log-info');
+  updateUI(); buildActions();
+}
+
+function updateUI() {
+  document.getElementById('p-hp-bar').style.width = (pHp/pMaxHp*100)+'%';
+  document.getElementById('p-mp-bar').style.width = (pMp/pMaxMp*100)+'%';
+  document.getElementById('e-hp-bar').style.width = (eHp/eMaxHp*100)+'%';
+  document.getElementById('p-hp-val').textContent = `${pHp} / ${pMaxHp}`;
+  document.getElementById('p-mp-val').textContent = `${pMp} / ${pMaxMp}`;
+  document.getElementById('e-hp-val').textContent = `${eHp} / ${eMaxHp}`;
+  document.getElementById('turn-label').textContent = `턴 ${turn}`;
+  document.getElementById('potion-info').textContent = `🧪 회복약 x${potions}`;
+
+  let bufHtml = '';
+  if (awakened) bufHtml += '<span class="awakened-badge">🔥 각성</span>';
+  if (atkBuff > 0) bufHtml += `<span class="buff-badge buff-atk">ATK↑ ${atkBuff}턴</span>`;
+  if (defBuff > 0) bufHtml += `<span class="buff-badge buff-def">DEF↑ ${defBuff}턴</span>`;
+  document.getElementById('buffs-area').innerHTML = bufHtml;
+}
+
+function buildActions() {
+  const ag = document.getElementById('action-grid');
+  ag.innerHTML = '';
+
+  mkBtn(ag, '👊 일반 공격', '기본 공격', '', false, ()=>doPlayerTurn('attack'));
+
+  player.skills.forEach((s, i) => {
+    const cls = s.isDomain ? 'action-btn' : 'action-btn';
+    const btn = mkBtn(ag, (s.isDomain?'🌀 ':'✨ ')+s.name, s.desc, `MP ${s.cost}`, pMp<s.cost, ()=>doPlayerTurn('skill',i));
+  });
+
+  mkBtn(ag, '🛡️ 방어 자세', '다음 피격 데미지 50% 감소', '', false, ()=>doPlayerTurn('defend'), 'def-btn');
+  mkBtn(ag, '🔵 주력 회복', 'MP +35 회복', '', false, ()=>doPlayerTurn('rest'), 'heal-btn');
+  mkBtn(ag, '🧪 회복약 사용', `HP 40% 회복 (잔여: ${potions})`, '', potions<=0, ()=>doPlayerTurn('potion'), 'item-btn');
+}
+
+function mkBtn(parent, name, desc, cost, disabled, onclick, extraClass) {
+  const btn = document.createElement('button');
+  btn.className = 'action-btn' + (extraClass ? ' '+extraClass : '');
+  btn.disabled = disabled;
+  btn.innerHTML = `<div class="act-name">${name}</div><div class="act-desc">${desc}</div>${cost?`<div class="act-cost">${cost}</div>`:''}`;
+  btn.onclick = onclick;
+  parent.appendChild(btn);
+  return btn;
+}
+
+function setActionsEnabled(v) {
+  document.querySelectorAll('.action-btn').forEach(b=>b.disabled=!v);
+}
+
+function getAtkMultiplier() {
+  let m = 1;
+  if (awakened) m *= 1.5;
+  if (atkBuff > 0) m *= 1.3;
+  return m;
+}
+
+function getDefBonus() {
+  let d = 0;
+  if (player.name === '후시구로 메구미') d += 5;
+  if (defBuff > 0) d += 8;
+  return d;
+}
+
+function checkAwakening() {
+  if (!awakened && pHp <= pMaxHp * 0.3 && pHp > 0) {
+    awakened = true;
+    addLog(`🔥 각성 발동!! ${player.name}의 주술이 폭주한다!! (ATK x1.5)`, 'log-awaken');
+    const field = document.getElementById('battle-field');
+    field.classList.add('domain-flash');
+    setTimeout(()=>field.classList.remove('domain-flash'), 800);
+  }
+}
+
+function doPlayerTurn(type, skillIdx) {
+  if (battleOver) return;
+  setActionsEnabled(false);
+  defending = false;
+  let damage = 0;
+
+  if (type === 'attack') {
+    damage = Math.round((player.attack + rand(-3, 10)) * getAtkMultiplier());
+    damage = Math.max(1, damage - enemy.defense);
+    const crit = Math.random() < player.critRate;
+    if (crit) { damage = Math.floor(damage * 1.8); addLog(`💥 크리티컬! ${player.name}의 일반 공격! <b>${damage}</b> 데미지!`, 'log-crit'); }
+    else addLog(`👊 ${player.name}의 일반 공격! <b>${damage}</b> 데미지!`, 'log-player');
+
+  } else if (type === 'defend') {
+    defending = true;
+    addLog(`🛡️ ${player.name}이(가) 방어 자세를 취한다!`, 'log-info');
+
+  } else if (type === 'rest') {
+    let base = 35;
+    if (player.name === '오코츠 유타') base = 45;
+    const recover = Math.min(base, pMaxMp - pMp);
+    pMp += recover;
+    addLog(`🔵 주력을 집중합니다... MP +${recover} 회복!`, 'log-info');
+
+  } else if (type === 'potion') {
+    potions--;
+    const heal = Math.floor(pMaxHp * 0.4);
+    const actual = Math.min(heal, pMaxHp - pHp);
+    pHp += actual;
+    addLog(`🧪 회복약 사용! HP +${actual} 회복!`, 'log-heal');
+
+  } else if (type === 'skill') {
+    const s = player.skills[skillIdx];
+    pMp -= s.cost;
+    damage = Math.round((s.damage + rand(-3, 18)) * getAtkMultiplier());
+    damage = Math.max(1, damage - enemy.defense);
+    const crit = Math.random() < player.critRate;
+    if (crit) { damage = Math.floor(damage * 1.8); }
+
+    // Hakari jackpot
+    let jackpot = false;
+    if (player.name === '하카리 킨지' && Math.random() < 0.25) {
+      jackpot = true;
+      pMp = pMaxMp;
+      const jheal = Math.floor(pMaxHp * 0.3);
+      pHp = Math.min(pMaxHp, pHp + jheal);
+      damage = Math.floor(damage * 1.4);
+    }
+
+    if (s.isDomain) {
+      const field = document.getElementById('battle-field');
+      field.classList.add('domain-flash');
+      setTimeout(()=>field.classList.remove('domain-flash'), 800);
+    }
+
+    if (jackpot) {
+      addLog(`🎰 <b>잭팟!!</b> ${s.name}! <b>${damage}</b> 데미지! HP/MP 회복!`, 'log-crit');
+    } else if (crit) {
+      addLog(`💥 크리티컬! <b>${s.name}</b>!! <b>${damage}</b> 데미지!`, 'log-crit');
+    } else {
+      addLog(`✨ <b>${s.name}</b>! <b>${damage}</b> 데미지!`, 'log-player');
+    }
+
+    // Todo: buff from certain skills
+    if (player.name === '토도 아오이' && s.name === '부기우기') {
+      atkBuff = 3;
+      addLog(`👏 박수갈채! 공격력 UP! (3턴)`, 'log-info');
+    }
+  }
+
+  eHp = Math.max(0, eHp - damage);
+  updateUI();
+
+  if (damage > 0) {
+    document.getElementById('e-hp-bar').classList.add('flash-hit');
+    setTimeout(()=>document.getElementById('e-hp-bar').classList.remove('flash-hit'), 300);
+  }
+
+  if (eHp <= 0) {
+    addLog(`🎉 ${enemy.name}을(를) 쓰러뜨렸다!`, 'log-win');
+    addLog(`🏆 ${player.name} 승리! 주살 완료!`, 'log-win');
+    battleOver = true;
+    setTimeout(()=>showResult(true), 800);
+    return;
+  }
+
+  setTimeout(doEnemyTurn, 700);
+}
+
+function doEnemyTurn() {
+  const skill = enemy.skills[rand(0, enemy.skills.length-1)];
+
+  // Evasion check
+  let evadeChance = player.evasion;
+  if (player.name === '토도 아오이') evadeChance += 0.15;
+  if (Math.random() < evadeChance) {
+    addLog(`💨 ${player.name}이(가) ${skill}을(를) 회피했다!`, 'log-dodge');
+    finishEnemyTurn();
+    return;
+  }
+
+  let damage = enemy.attack + rand(-3, 12);
+  const totalDef = player.defense + getDefBonus();
+  damage = Math.max(1, damage - totalDef);
+  if (defending) { damage = Math.max(1, Math.floor(damage * 0.5)); }
+
+  const crit = Math.random() < 0.10;
+  if (crit) {
+    damage = Math.floor(damage * 1.5);
+    addLog(`💀 ${enemy.name}의 <b>${skill}</b>! 강력한 일격! <b>${damage}</b> 데미지!`, 'log-crit');
+  } else {
+    addLog(`👹 ${enemy.name}의 <b>${skill}</b>! <b>${damage}</b> 데미지!`, 'log-enemy');
+  }
+
+  // Sukuna domain expansion event
+  if (skill === '영역전개: 복마전신') {
+    damage += 30;
+    addLog(`🌀 복마전신! 세상이 갈린다! 추가 <b>30</b> 데미지!`, 'log-crit');
+    const field = document.getElementById('battle-field');
+    field.classList.add('domain-flash');
+    setTimeout(()=>field.classList.remove('domain-flash'), 800);
+  }
+
+  pHp = Math.max(0, pHp - damage);
+  updateUI();
+
+  document.getElementById('battle-field').classList.add('shake');
+  setTimeout(()=>document.getElementById('battle-field').classList.remove('shake'), 400);
+
+  checkAwakening();
+
+  if (pHp <= 0) {
+    addLog(`💀 ${player.name}이(가) 쓰러졌다...`, 'log-lose');
+    addLog(`😈 패배... 저주에 잠식당했습니다.`, 'log-lose');
+    battleOver = true;
+    setTimeout(()=>showResult(false), 800);
+    return;
+  }
+
+  finishEnemyTurn();
+}
+
+function finishEnemyTurn() {
+  let mpRegen = 8;
+  if (player.name === '오코츠 유타') mpRegen = 18;
+  pMp = Math.min(pMaxMp, pMp + mpRegen);
+
+  if (atkBuff > 0) atkBuff--;
+  if (defBuff > 0) defBuff--;
+  turn++;
+  updateUI(); buildActions();
+}
+
+function addLog(msg, cls) {
+  const box = document.getElementById('log-box');
+  box.innerHTML += `<div class="${cls}">${msg}</div>`;
+  box.scrollTop = box.scrollHeight;
+}
+
+function showResult(win) {
+  document.getElementById('battle-screen').style.display = 'none';
+  document.getElementById('result-screen').style.display = 'block';
+  if (win) {
+    document.getElementById('result-emoji').textContent = '🏆';
+    document.getElementById('result-text').textContent = '주살 완료!';
+    document.getElementById('result-text').style.color = '#4ade80';
+    document.getElementById('result-sub').textContent = `${player.name}이(가) ${enemy.name}을(를) ${turn}턴 만에 쓰러뜨렸습니다!`;
+  } else {
+    document.getElementById('result-emoji').textContent = '😈';
+    document.getElementById('result-text').textContent = '패배...';
+    document.getElementById('result-text').style.color = '#ef4444';
+    document.getElementById('result-sub').textContent = `${turn}턴째에 ${enemy.name}에게 패배했습니다...`;
+  }
+}
+
+function resetGame() {
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('battle-screen').style.display = 'none';
+  document.getElementById('select-screen').style.display = 'block';
+  selectedChar = null; selectedDiff = null;
+  document.querySelectorAll('.char-card, .diff-card').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('btn-start').disabled = true;
+}
+
+buildSelectScreen();
+</script>
+</body>
+</html>
