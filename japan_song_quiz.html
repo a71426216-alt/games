@@ -120,7 +120,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .choice .key{flex-shrink:0;width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.08);font-size:.7rem;font-weight:800;color:#a1a1aa;display:flex;align-items:center;justify-content:center}
 .choice-info{display:flex;flex-direction:column;gap:1px;min-width:0}
 .choice-artist{font-size:.68rem;color:#9ca3af;font-weight:500}
-.choice-title{font-size:.88rem;font-weight:700;color:#e4e4e7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.choice-title{font-size:.84rem;font-weight:700;color:#e4e4e7;line-height:1.3}
 .choice:hover:not(:disabled){background:rgba(232,121,169,.1);border-color:rgba(232,121,169,.28)}
 .choice:hover:not(:disabled) .key{color:#f9a8d4;background:rgba(232,121,169,.15)}
 .choice:active:not(:disabled){transform:scale(.99)}
@@ -128,9 +128,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .choice.correct{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.45);color:#bbf7d0}
 .choice.correct .key{background:rgba(34,197,94,.25);color:#86efac}
 .choice.correct .choice-title{color:#bbf7d0}
+.choice.correct .choice-artist{color:#86efac}
 .choice.wrong{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#fecaca}
 .choice.wrong .key{background:rgba(239,68,68,.2);color:#fca5a5}
 .choice.wrong .choice-title{color:#fecaca}
+.choice.wrong .choice-artist{color:#fca5a5}
 .choice.dim{opacity:.4}
 
 .feedback{min-height:22px;font-size:.84rem;font-weight:600;margin-top:14px;text-align:center}
@@ -174,7 +176,7 @@ footer{margin-top:auto;padding-top:28px;text-align:center;font-size:.65rem;color
       <div class="card">
         <span class="hero-badge">Music Quiz</span>
         <h2 class="hero-title">노래를 듣고,<br>곡 제목을 맞혀 보세요.</h2>
-        <p class="hero-lead">랜덤 10문제 — 15초간 노래를 재생합니다. 보기 네 개 중 하나를 고르세요.</p>
+        <p class="hero-lead">랜덤 10문제 — 15초간 노래를 재생합니다. 보기 다섯 개 중 하나를 고르세요.</p>
         <div class="chips">
           <span class="chip">🎧 듣기 퀴즈</span>
           <span class="chip">10문제</span>
@@ -250,24 +252,30 @@ footer{margin-top:auto;padding-top:28px;text-align:center;font-size:.65rem;color
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
 const POOL = [
-  { vid:'SX_ViT4Ra7k', start:53, artist:'米津玄師', title:'Lemon', kr:'레몬', hint:'드라마 「언내추럴」 주제가' },
-  { vid:'TQ8WlA2GXbk', start:58, artist:'Official髭男dism', title:'Pretender', kr:'프리텐더', hint:'영화 「콘피던스맨 JP」 주제가' },
-  { vid:'CwkzK-F0Y00', start:0, artist:'LiSA', title:'紅蓮華', kr:'구렌게', hint:'「귀멸의 칼날」 오프닝' },
-  { vid:'o6wtDPVkKqI', start:0, artist:'高橋洋子', title:'残酷な天使のテーゼ', kr:'잔코쿠나 텐시노 테제', hint:'「에반게리온」 오프닝' },
+  { vid:'SX_ViT4Ra7k', start:53, artist:'요네즈 켄시(米津玄師)', title:'Lemon', kr:'레몬', hint:'드라마 「언내추럴」 주제가' },
+  { vid:'TQ8WlA2GXbk', start:58, artist:'히게단(Official髭男dism)', title:'Pretender', kr:'프리텐더', hint:'영화 「콘피던스맨 JP」 주제가' },
+  { vid:'CwkzK-F0Y00', start:0, artist:'LiSA', title:'紅蓮華', kr:'홍련화', hint:'「귀멸의 칼날」 오프닝' },
+  { vid:'o6wtDPVkKqI', start:0, artist:'타카하시 요코(高橋洋子)', title:'残酷な天使のテーゼ', kr:'잔혹한 천사의 테제', hint:'「에반게리온」 오프닝' },
   { vid:'Fve_lHIPa-I', start:64, artist:'TK from 凛として時雨', title:'unravel', kr:'언레이블', hint:'「도쿄 구울」 오프닝' },
-  { vid:'-tKVN2mAKRI', start:53, artist:'DAOKO × 米津玄師', title:'打上花火', kr:'우치아게 하나비', hint:'영화 「불꽃놀이」 주제가' },
-  { vid:'cUx4IPHOVDE', start:42, artist:'黒うさP feat. 初音ミク', title:'千本桜', kr:'센본자쿠라', hint:'보컬로이드 대표 명곡' },
+  { vid:'-tKVN2mAKRI', start:53, artist:'DAOKO × 요네즈 켄시', title:'打上花火', kr:'쏘아올린 불꽃', hint:'영화 「불꽃놀이」 주제가' },
+  { vid:'shs0rAiwsGQ', start:42, artist:'쿠로우사P feat. 하츠네 미쿠', title:'千本桜', kr:'천본벚꽃', hint:'보컬로이드 대표 명곡' },
   { vid:'ZRtdQ81jPUQ', start:0, artist:'YOASOBI', title:'アイドル', kr:'아이돌', hint:'「최애의 아이」 오프닝' },
-  { vid:'x8VYWazR5mE', start:52, artist:'YOASOBI', title:'夜に駆ける', kr:'요루니카케루', hint:'YOASOBI 데뷔곡' },
-  { vid:'ony539T074w', start:52, artist:'King Gnu', title:'白日', kr:'하쿠지츠', hint:'드라마 「이노센스」 주제가' },
-  { vid:'CbH2F0kXgTY', start:49, artist:'Official髭男dism', title:'ミックスナッツ', kr:'믹스너츠', hint:'「스파이 패밀리」 오프닝' },
-  { vid:'1tk1pqwrOys', start:0, artist:'Eve', title:'廻廻奇譚', kr:'카이카이키탄', hint:'「주술회전」 오프닝' },
-  { vid:'QjrkrVmC-8M', start:46, artist:'Mrs. GREEN APPLE', title:'ライラック', kr:'라일락', hint:'2024 레코드대상 수상곡' }
+  { vid:'j1hft9Wjq9U', start:5, artist:'YOASOBI', title:'夜に駆ける', kr:'밤을 달리다', hint:'YOASOBI 데뷔곡' },
+  { vid:'MSv7NbfbtU8', start:0, artist:'King Gnu', title:'飛行艇', kr:'비행정', hint:'ANA CM 테마곡' },
+  { vid:'CbH2F0kXgTY', start:49, artist:'히게단(Official髭男dism)', title:'ミックスナッツ', kr:'믹스너츠', hint:'「스파이 패밀리」 오프닝' },
+  { vid:'1tk1pqwrOys', start:0, artist:'Eve', title:'廻廻奇譚', kr:'회회기담', hint:'「주술회전」 오프닝' },
+  { vid:'QjrkrVmC-8M', start:46, artist:'Mrs. GREEN APPLE', title:'ライラック', kr:'라일락', hint:'2024 레코드대상 수상곡' },
+  { vid:'PDSkFeMVNFs', start:18, artist:'RADWIMPS', title:'前前前世', kr:'전전전세', hint:'영화 「너의 이름은。」 주제가' },
+  { vid:'H6FUBWGSOIc', start:18, artist:'Creepy Nuts', title:'Bling-Bang-Bang-Born', kr:'블링뱅뱅본', hint:'「마슐」 시즌2 오프닝' },
+  { vid:'-htsLEAtaKs', start:0, artist:'BUMP OF CHICKEN', title:'天体観測', kr:'천체관측', hint:'2001년 발매 J-Rock 명곡' },
+  { vid:'tLQLa6lM3Us', start:0, artist:'Aimer', title:'残響散歌', kr:'잔향산가', hint:'「귀멸의 칼날 유곽편」 오프닝' },
+  { vid:'1FliVTcX8bQ', start:0, artist:'Ado', title:'新時代', kr:'신시대', hint:'「ONE PIECE FILM RED」 주제가' },
+  { vid:'YnSW8ian29w', start:0, artist:'Ado', title:'踊', kr:'춤', hint:'Ado 대표 히트곡' }
 ];
 
 const Q_PER_ROUND = 10;
 const PLAY_SEC = 15;
-const KEYS = ['A','B','C','D'];
+const KEYS = ['A','B','C','D','E'];
 
 let order = [];
 let idx = 0;
@@ -287,7 +295,7 @@ const timerFill = $('timer-fill');
 const btnPlay = $('btn-play');
 const hintText = $('hint-text');
 
-/* ── YouTube API ── */
+/* ── YouTube IFrame API ── */
 let apiTimeout = setTimeout(() => {
   if (!ytReady) btnPlay.textContent = '⚠ 유튜브 로딩 실패 — 새로고침';
 }, 12000);
@@ -295,7 +303,7 @@ let apiTimeout = setTimeout(() => {
 function onYouTubeIframeAPIReady() {
   clearTimeout(apiTimeout);
   player = new YT.Player('yt-player', {
-    width:160, height:90,
+    width:200, height:112,
     playerVars:{ autoplay:0, controls:0, disablekb:1, modestbranding:1, playsinline:1, rel:0 },
     events:{
       onReady() { ytReady = true; },
@@ -337,7 +345,7 @@ function startPlayTimer() {
     timerFill.style.width = (pct * 100) + '%';
     if (elapsed >= PLAY_SEC) {
       clearInterval(playTimerInterval);
-      if (player) player.pauseVideo();
+      if (player) try { player.pauseVideo(); } catch(e) {}
       currentlyPlaying = false;
       disc.classList.remove('spinning');
       showReplayBtn();
@@ -396,7 +404,7 @@ function buildRound() {
 
 function getChoices(correctSong) {
   const others = POOL.filter(s => s !== correctSong);
-  const wrong = shuffle(others).slice(0, 3);
+  const wrong = shuffle(others).slice(0, 4);
   return shuffle([correctSong, ...wrong]);
 }
 
@@ -436,7 +444,7 @@ function renderQuestion() {
       '<span class="key">' + KEYS[i] + '</span>' +
       '<span class="choice-info">' +
         '<span class="choice-artist">' + escHtml(song.artist) + '</span>' +
-        '<span class="choice-title">' + escHtml(song.title) + ' (' + escHtml(song.kr) + ')</span>' +
+        '<span class="choice-title">' + escHtml(song.kr) + ' (' + escHtml(song.title) + ')</span>' +
       '</span>';
     b.dataset.vid = song.vid;
     b.addEventListener('click', () => onPick(b, q));
@@ -469,7 +477,7 @@ function onPick(btn, q) {
     fb.textContent = '정답! +10점';
     fb.classList.add('ok');
   } else {
-    fb.textContent = '오답 — 정답: ' + q.artist + ' · ' + q.title + ' (' + q.kr + ')';
+    fb.textContent = '오답 — 정답: ' + q.artist + ' - ' + q.kr + ' (' + q.title + ')';
     fb.classList.add('bad');
   }
   $('btn-next').style.display = 'block';
@@ -548,7 +556,7 @@ $('btn-hint').addEventListener('click', () => {
 
 document.addEventListener('keydown', e => {
   if (!screens.quiz.classList.contains('active') || answered) return;
-  const map = { '1':0, '2':1, '3':2, '4':3, 'a':0, 'b':1, 'c':2, 'd':3 };
+  const map = { '1':0, '2':1, '3':2, '4':3, '5':4, 'a':0, 'b':1, 'c':2, 'd':3, 'e':4 };
   const ci = map[e.key.toLowerCase()];
   if (ci !== undefined) {
     const btns = $('choices').querySelectorAll('.choice');
