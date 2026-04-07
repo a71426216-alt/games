@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0f1117">
 <meta property="og:type" content="website">
 <meta property="og:title" content="일본 노래 퀴즈">
-<meta property="og:description" content="노래 듣고 곡 제목 맞히기 · J-POP &amp; 애니송 10문제">
+<meta property="og:description" content="노래 듣고 곡 제목 맞히기 · J-POP &amp; 애니송 11문제">
 <title>일본 노래 퀴즈</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
@@ -151,8 +151,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 footer{margin-top:auto;padding-top:28px;text-align:center;font-size:.65rem;color:#52525b;line-height:1.65;max-width:34em;margin-left:auto;margin-right:auto}
 
-.yt-hide{position:fixed;bottom:0;left:0;width:320px;height:180px;overflow:hidden;opacity:0;pointer-events:none;z-index:-1;transition:opacity .3s}
-.yt-hide.show-ad{opacity:1;pointer-events:auto;z-index:9999;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.yt-hide{
+  position:fixed;
+  width:1px;height:1px;
+  left:0;top:0;
+  overflow:hidden;
+  opacity:0.01; /* keep in layout for YouTube */
+  pointer-events:none;
+}
 
 .api-error{text-align:center;padding:20px;font-size:.82rem;color:#f87171;line-height:1.6}
 .api-error a{color:#818cf8;text-decoration:underline}
@@ -177,10 +183,10 @@ footer{margin-top:auto;padding-top:28px;text-align:center;font-size:.65rem;color
       <div class="card">
         <span class="hero-badge">Music Quiz</span>
         <h2 class="hero-title">노래를 듣고,<br>곡 제목을 맞혀 보세요.</h2>
-        <p class="hero-lead">랜덤 10문제 — 15초간 노래를 재생합니다. 보기 다섯 개 중 하나를 고르세요.</p>
+        <p class="hero-lead">총 11문제 — 기본 15초(특별문제 30초)만 재생합니다. 보기 다섯 개 중 하나를 고르세요.</p>
         <div class="chips">
           <span class="chip">🎧 듣기 퀴즈</span>
-          <span class="chip">10문제</span>
+          <span class="chip">11문제</span>
           <span class="chip">모바일 OK</span>
         </div>
         <button type="button" class="btn btn-primary" id="btn-start">시작하기</button>
@@ -234,7 +240,7 @@ footer{margin-top:auto;padding-top:28px;text-align:center;font-size:.65rem;color
     <div id="screen-result" class="screen">
       <div class="card result-card">
         <h2>이번 라운드 결과</h2>
-        <div class="big-score" id="final-score">0 / 100</div>
+        <div class="big-score" id="final-score">0 / 11</div>
         <p class="result-msg" id="final-msg"></p>
         <div class="result-actions">
           <button type="button" class="btn btn-primary" id="btn-retry">다시 도전</button>
@@ -271,10 +277,29 @@ const POOL = [
   { vid:'-htsLEAtaKs', start:0, artist:'BUMP OF CHICKEN', title:'天体観測', kr:'천체관측', hint:'2001년 발매 J-Rock 명곡' },
   { vid:'tLQLa6lM3Us', start:0, artist:'Aimer', title:'残響散歌', kr:'잔향산가', hint:'「귀멸의 칼날 유곽편」 오프닝' },
   { vid:'1FliVTcX8bQ', start:0, artist:'Ado', title:'新時代', kr:'신시대', hint:'「ONE PIECE FILM RED」 주제가' },
-  { vid:'YnSW8ian29w', start:0, artist:'Ado', title:'踊', kr:'춤', hint:'Ado 대표 히트곡' }
+  { vid:'YnSW8ian29w', start:0, artist:'Ado', title:'踊', kr:'춤', hint:'Ado 대표 히트곡' },
+
+  // 수행평가 영상 문제 (처음부터 30초)
+  {
+    vid:'4cp0KifyAfc',
+    start:0,
+    dur:30,
+    alwaysInclude:true,
+    artist:'',
+    title:'',
+    kr:'수행평가 영상',
+    hint:'처음 30초를 듣고 정답을 고르세요.',
+    fixedChoices: [
+      { vid:'4cp0KifyAfc', artist:'', title:'', kr:'김한결 수행평가 영상' },
+      { vid:'wrong-1', artist:'', title:'', kr:'김주연 수행평가 영상' },
+      { vid:'wrong-2', artist:'', title:'', kr:'홍성두 수행평가 영상' },
+      { vid:'wrong-3', artist:'', title:'', kr:'장현성 수행평가 영상' },
+      { vid:'wrong-4', artist:'', title:'', kr:'이승필 수행평가 영상' }
+    ]
+  }
 ];
 
-const Q_PER_ROUND = 10;
+const Q_PER_ROUND = 11;
 const PLAY_SEC = 15;
 const KEYS = ['A','B','C','D','E'];
 
@@ -297,24 +322,40 @@ const btnPlay = $('btn-play');
 const hintText = $('hint-text');
 
 /* ── YouTube IFrame API ── */
-let apiTimeout = setTimeout(() => {
-  if (!ytReady) btnPlay.textContent = '⚠ 유튜브 로딩 실패 — 새로고침';
-}, 12000);
+let ytApiTimeout = setTimeout(() => {
+  if (!ytReady) {
+    btnPlay.textContent = '⚠ 유튜브 로딩 실패';
+    $('sound-note').textContent = '로컬(file://)로 열면 유튜브가 막히는 경우가 있어요. GitHub Pages(또는 로컬 서버)로 열어주세요.';
+    $('sound-note').style.display = '';
+  }
+}, 8000);
 
 function onYouTubeIframeAPIReady() {
-  clearTimeout(apiTimeout);
+  // `file://` 환경에서는 location.origin이 "null"이라 `origin`을 강제하면 로딩이 막힐 수 있음
+  const isHttp = location.protocol === 'http:' || location.protocol === 'https:';
+  const playerVars = {
+    autoplay: 0,
+    controls: 0,
+    disablekb: 1,
+    modestbranding: 1,
+    playsinline: 1,
+    rel: 0,
+    enablejsapi: 1
+  };
+  if (isHttp) playerVars.origin = location.origin;
+
   player = new YT.Player('yt-player', {
-    width:200, height:112,
-    playerVars:{ autoplay:0, controls:1, disablekb:1, modestbranding:1, playsinline:1, rel:0, origin:location.origin, enablejsapi:1 },
-    events:{
-      onReady() { ytReady = true; },
+    width: 200,
+    height: 112,
+    playerVars,
+    events: {
+      onReady() { ytReady = true; clearTimeout(ytApiTimeout); },
       onStateChange: onState,
       onError: onYTError
     }
   });
 }
 
-const ytWrap = document.querySelector('.yt-hide');
 let expectedVid = '';
 
 function isAdPlaying() {
@@ -327,12 +368,11 @@ function isAdPlaying() {
 function onState(e) {
   if (e.data === YT.PlayerState.PLAYING) {
     if (isAdPlaying()) {
-      ytWrap.classList.add('show-ad');
-      $('sound-note').textContent = '⏳ 광고 재생 중 — 건너뛰기를 눌러주세요';
-      $('sound-note').style.display = '';
+      // Ads can't be removed; silently skip this question.
+      stopAudio();
+      skipQuestion();
       return;
     }
-    ytWrap.classList.remove('show-ad');
     disc.classList.remove('buffering');
     disc.classList.add('spinning');
     currentlyPlaying = true;
@@ -352,16 +392,23 @@ function onYTError() {
 }
 
 /* ── Timer ── */
+function getPlaySecForCurrent() {
+  const q = order[idx];
+  const s = q && Number(q.dur);
+  return Number.isFinite(s) && s > 0 ? s : PLAY_SEC;
+}
+
 function startPlayTimer() {
   clearInterval(playTimerInterval);
   playStartTime = Date.now();
   timerTrack.style.display = '';
   timerFill.style.width = '0%';
+  const playSec = getPlaySecForCurrent();
   playTimerInterval = setInterval(() => {
     const elapsed = (Date.now() - playStartTime) / 1000;
-    const pct = Math.min(elapsed / PLAY_SEC, 1);
+    const pct = Math.min(elapsed / playSec, 1);
     timerFill.style.width = (pct * 100) + '%';
-    if (elapsed >= PLAY_SEC) {
+    if (elapsed >= playSec) {
       clearInterval(playTimerInterval);
       if (player) try { player.pauseVideo(); } catch(e) {}
       currentlyPlaying = false;
@@ -378,7 +425,6 @@ function stopAudio() {
   }
   currentlyPlaying = false;
   disc.classList.remove('spinning','buffering');
-  ytWrap.classList.remove('show-ad');
 }
 
 function showReplayBtn() {
@@ -391,13 +437,26 @@ function showReplayBtn() {
 /* ── Play logic ── */
 function playCurrentSong() {
   const q = order[idx];
+  if (!q || !q.vid) {
+    btnPlay.textContent = '⚠ 파일 경로 없음 — 건너뛰기';
+    btnPlay.onclick = () => skipQuestion();
+    return;
+  }
   if (!player || !ytReady) { btnPlay.textContent = '로딩 중…'; return; }
-  expectedVid = q.vid;
   btnPlay.disabled = true;
   btnPlay.textContent = '재생 중…';
   disc.classList.add('buffering');
   $('sound-note').style.display = 'none';
-  player.loadVideoById({ videoId: q.vid, startSeconds: q.start });
+  try {
+    expectedVid = q.vid;
+    player.loadVideoById({ videoId: q.vid, startSeconds: q.start });
+    // Some environments require an explicit play call even after loadVideoById.
+    setTimeout(() => { try { player.playVideo(); } catch(e) {} }, 150);
+  } catch (e) {
+    btnPlay.textContent = '⚠ 재생 실패 — 건너뛰기';
+    btnPlay.onclick = () => skipQuestion();
+    btnPlay.disabled = false;
+  }
 }
 
 /* ── Screen nav ── */
@@ -419,11 +478,20 @@ function shuffle(arr) {
 
 /* ── Quiz logic ── */
 function buildRound() {
-  return shuffle(POOL.map((_,i) => i)).slice(0, Q_PER_ROUND).map(i => POOL[i]);
+  const must = POOL.filter(q => q && q.alwaysInclude);
+  const rest = POOL.filter(q => !q || !q.alwaysInclude);
+  const need = Math.max(0, Q_PER_ROUND - must.length);
+  const picked = shuffle(rest).slice(0, need);
+  return shuffle([...must, ...picked]);
 }
 
 function getChoices(correctSong) {
-  const others = POOL.filter(s => s !== correctSong);
+  if (correctSong && Array.isArray(correctSong.fixedChoices) && correctSong.fixedChoices.length === 5) {
+    // Always show the provided five labels exactly as-is (no shuffling).
+    return correctSong.fixedChoices.slice(0, 5);
+  }
+  // Never use special fixed-choice questions as distractors in other questions.
+  const others = POOL.filter(s => s !== correctSong && !(s && (s.alwaysInclude || s.fixedChoices)));
   const wrong = shuffle(others).slice(0, 4);
   return shuffle([correctSong, ...wrong]);
 }
@@ -460,11 +528,12 @@ function renderQuestion() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'choice';
+    const artistLine = song.artist ? ('<span class="choice-artist">' + escHtml(song.artist) + '</span>') : '';
     b.innerHTML =
       '<span class="key">' + KEYS[i] + '</span>' +
       '<span class="choice-info">' +
-        '<span class="choice-artist">' + escHtml(song.artist) + '</span>' +
-        '<span class="choice-title">' + escHtml(song.kr) + ' (' + escHtml(song.title) + ')</span>' +
+        artistLine +
+        '<span class="choice-title">' + escHtml(song.kr) + (song.title ? (' (' + escHtml(song.title) + ')') : '') + '</span>' +
       '</span>';
     b.dataset.vid = song.vid;
     b.addEventListener('click', () => onPick(b, q));
@@ -492,9 +561,9 @@ function onPick(btn, q) {
   });
   const fb = $('feedback');
   if (btn.dataset.vid === correctVid) {
-    score += 10;
+    score += 1;
     $('score').textContent = String(score);
-    fb.textContent = '정답! +10점';
+    fb.textContent = '정답! +1점';
     fb.classList.add('ok');
   } else {
     fb.textContent = '오답 — 정답: ' + q.artist + ' - ' + q.kr + ' (' + q.title + ')';
@@ -524,7 +593,7 @@ function next() {
 
 function finish() {
   showScreen('result');
-  const max = order.length * 10;
+  const max = order.length;
   $('final-score').textContent = score + ' / ' + max;
   const pct = max ? score / max : 0;
   let msg;
