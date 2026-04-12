@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>눈을 뜬 날 — 김한결의 생존 기록</title>
+  <style>
+    :root {
+      --bg: #0d0f12;
+      --panel: #161a20;
+      --text: #e8e6e3;
+      --muted: #9aa3ad;
+      --accent: #c45c3e;
+      --accent2: #3d7a5c;
+      --danger: #8b2c2c;
+      --font: "Pretendard", "Malgun Gothic", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(ellipse at top, #1a2229 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.65;
+    }
+    .wrap {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.25rem;
+      color: #f0ebe5;
+    }
+    .sub {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+    #story {
+      background: var(--panel);
+      border: 1px solid #2a323c;
+      border-radius: 12px;
+      padding: 1.25rem 1.35rem;
+      min-height: 220px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.35);
+    }
+    #story p {
+      margin: 0 0 1rem;
+      font-size: 0.95rem;
+    }
+    #story p:last-child { margin-bottom: 0; }
+    .speaker {
+      color: #b8c4d0;
+      font-weight: 600;
+    }
+    .mono { color: #7a8fa3; font-style: italic; }
+    #choices {
+      margin-top: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    button.choice {
+      font-family: inherit;
+      font-size: 0.92rem;
+      text-align: left;
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      border: 1px solid #3a4552;
+      background: #1e252e;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    button.choice:hover {
+      border-color: var(--accent);
+      background: #252d38;
+    }
+    button.choice:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .ending-tag {
+      display: inline-block;
+      margin-top: 0.75rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: var(--danger);
+      color: #fff;
+    }
+    .ending-tag.good { background: var(--accent2); }
+    .ending-tag.neutral { background: #5c5a42; }
+    footer {
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    button.restart {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: 1px dashed #4a5563;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button.restart:hover { color: var(--text); border-color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>눈을 뜬 날</h1>
+    <p class="sub">좀비 아포칼립스 · 텍스트 선택 게임 · 엔딩 분기</p>
+    <div id="story"></div>
+    <div id="choices"></div>
+    <footer>김한결의 시점 · 저장 없음 · 처음부터 다시 플레이해 다른 동료를 선택해 보세요.</footer>
+  </div>
+  <script>
+    const storyEl = document.getElementById("story");
+    const choicesEl = document.getElementById("choices");
+
+    const scenes = {
+      start: {
+        html: `
+          <p class="mono">머리가 깨질 듯이 아프다. 눈을 뜨자 천장이 흔들리는 듯 보였다.</p>
+          <p><span class="speaker">김한결 (독백)</span> 여긴… 어디지? 공기가 쇠와 흙 냄새가 섞여 있다.</p>
+          <p>낡은 천막 안이다. 밖에서는 누군가 발을 구르는 소리, 멀리서 희미한 무전기 잡음이 들린다.</p>
+          <p><span class="speaker">홍성두</span> 이제야 정신이 드나 보네. 너 이틀 동안 잠만 잔 거 알아? 약 먹이느라 죽는 줄 알았다.</p>
+          <p>중년 남자가 천막 입구를 반쯤 열고 서 있다. 얼굴에는 상처 자국이, 손에는 반창고가 덕지덕지 붙어 있다.</p>
+          <p><span class="speaker">김한결</span> 내 이름은… 기억이 나는데. 도대체 여긴 어디야? 나 왜 여기 있지?</p>
+          <p><span class="speaker">홍성두</span> 여긴 ‘남문 교외 임시 거점’. 좀비가 도시를 집어삼킨 뒤로 생존자들이 모인 곳이야. 너는 북쪽 고가도로에서 쓰러져 있었지. 우리가 끌어왔어.</p>
+        `,
+        choices: [
+          { text: "“고마워… 그런데 나, 왜 거기 있었지?” 기억을 더 캐본다.", next: "memory" },
+          { text: "“지금 상황부터 알려줘. 밖은 안전해?” 현실부터 파악한다.", next: "situation" },
+          { text: "천막을 밀고 나가 사람들을 직접 본다.", next: "outside" },
+        ],
+      },
+      memory: {
+        html: `
+          <p><span class="speaker">홍성두</span> 기억이 끊긴 건 아마 충격이겠지. 네 옆에 있던 차가 뒤집혀 있었어. 운전석은 텅 비었고.</p>
+          <p><span class="speaker">김한결</span> …차?</p>
+          <p><span class="speaker">홍성두</span> 응. 누군가 널 버리고 간 것 같기도 하고, 아니면 네가 필사적으로 탈출한 것 같기도 하고. 의무 김주연이 네 몸을 더 봐야 할 거야.</p>
+          <p>그때 천막 밖에서 낮은 목소리가 끼어든다.</p>
+          <p><span class="speaker">김주연 (의무)</span> 홍 대장, 무전 들어와요. 장현성 씨가 ‘북쪽’에서 이상 신호 잡았대요.</p>
+        `,
+        choices: [
+          { text: "김주연과 함께 의무 텐트로 가 상처를 점검받는다.", next: "medic_tent" },
+          { text: "장현성이 있는 통신소로 간다. 신호가 뭔지 듣는다.", next: "radio" },
+        ],
+      },
+      situation: {
+        html: `
+          <p><span class="speaker">홍성두</span> 안전하다고 말하긴 어렵다. 밤에는 울음 같은 소리가 성벽 밖에서 들리고, 낮에도 가끔 ‘떼’가 몰려와.</p>
+          <p><span class="speaker">홍성두</span> 다행히 여긴 최현준 같은 정찰병들이 길을 막아주고, 김경훈이 만든 장애물 덕에 버티는 중이야.</p>
+          <p>밖에서 굉음이 난다. 누군가 소리친다.</p>
+          <p><span class="speaker">박승호 (방어조)</span> 동쪽 펜스! 압력 올라왔어! 맹주훈, 지게차 위치!</p>
+        `,
+        choices: [
+          { text: "동쪽 펜스로 달려가 상황을 본다.", next: "fence" },
+          { text: "일단 홍성두를 따라 지휘소로 간다.", next: "command" },
+        ],
+      },
+      outside: {
+        html: `
+          <p>천막 밖은 좁은 골목 같은 통로다. 비닐하우스를 개조한 창고들이 줄지어 있고, 사람들이 각자 일을 하고 있다.</p>
+          <p><span class="speaker">김승욱 (급양)</span> 야, 방금 깬 사람 나와? 국물이라도 한 사발 먹어. 빈속에 약만 먹으면 쓰러진다.</p>
+          <p><span class="speaker">문종범 (기록관)</span> 신입은 여기 서명부터. 이름, 특기, 왼쪽 손가락 지문… 농담이야. 특기만 말해.</p>
+          <p>멀리 곽동헌이 성벽 위에서 쌍안경을 내리고 고개를 끄덕인다.</p>
+        `,
+        choices: [
+          { text: "김승욱을 따라 급양소에서 몸부터 추스른다.", next: "kitchen" },
+          { text: "곽동헌이 있는 관측대로 올라가 밖 풍경을 본다.", next: "watchtower" },
+          { text: "문종범과 이야기하며 거점 규칙을 듣는다.", next: "records" },
+        ],
+      },
+      medic_tent: {
+        html: `
+          <p>의무 텐트 안은 소독약 냄새로 가득하다. 김주연이 손전등으로 눈동자를 비춘다.</p>
+          <p><span class="speaker">김주연</span> 반응은 정상 쪽이에요. 다만… 혈액 검사에서 이상 수치가 하나 있었어요. 감염은 아니에요. 스트레스성이에요. 그런데 이름이 김한결이죠? 혹시 최근에 누굴… 오래 붙잡고 있었어요?</p>
+          <p><span class="speaker">김한결</span> 기억이… 안 나.</p>
+          <p>텐트 구석에서 류영재가 노트를 들고 중얼거린다.</p>
+          <p><span class="speaker">류영재 (감염 연구)</span> 흥미롭군. 뇌파는 ‘깨어남 직후 공포’ 패턴이야. 도시 쪽에서 뭔가를 본 거겠지.</p>
+        `,
+        choices: [
+          { text: "류영재에게 더 묻는다. 도시에 뭐가 있는지.", next: "research" },
+          { text: "김주연을 믿고 휴식을 취한 뒤 저녁 회의에 참석한다.", next: "evening_meeting" },
+        ],
+      },
+      radio: {
+        html: `
+          <p>통신소는 좁고 전선이 벽을 타고 간다. 장현성이 헤드셋을 벗고 한결을 본다.</p>
+          <p><span class="speaker">장현성 (통신·전자)</span> 왔어? 북쪽 릴레이에서 ‘인간’ 코드가 잡혔어. 근데 패턴이 이상해. 구조대가 아니라… 누군가 장난치는 것 같기도 하고.</p>
+          <p><span class="speaker">이승필 (전력)</span> 배터리는 30퍼 남았어. 태양판 쪽은 내가 지켜야 해서 오래 못 붙잡아.</p>
+          <p>무전기에서 잡음 사이로 목소리가 스친다. “…구조… 아니… 오지 마…”</p>
+        `,
+        choices: [
+          { text: "장현성·이승필과 함께 신호를 추적하는 야간 임무에 나선다.", next: "night_signal" },
+          { text: "위험해 보이니 홍성두에게 보고하고 대기한다.", next: "evening_meeting" },
+        ],
+      },
+      fence: {
+        html: `
+          <p>동쪽 펜스 앞은 숨이 막힌다. 박승호가 철조망을 두드리며 숫자를 센다.</p>
+          <p><span class="speaker">박승호</span> 서른… 마흔… 씨, 오늘은 많네.</p>
+          <p>맹주훈이 지게차로 콘크리트 블록을 밀어 넣는다.</p>
+          <p><span class="speaker">맹주훈 (기계·차량)</span> 한결아? 물러서! 철판 튈 수 있어!</p>
+          <p>펜스 너머, 회색 가죽 같은 피부의 무리가 밀려온다. 그중 하나가 한결을 ‘응시’하는 듯하다.</p>
+        `,
+        choices: [
+          { text: "박승호 옆에서 모래주머니를 나른다. 방어에 힘을 보탠다.", next: "defense_path" },
+          { text: "겁이 나 뒤로 물러나 최현준을 찾는다. “탈출 루트가 있어?”", next: "scout_escape" },
+        ],
+      },
+      command: {
+        html: `
+          <p>지휘소 겸 회의실은 지도가 빼곡하다. 변해성이 색깔 핀으로 루트를 짚는다.</p>
+          <p><span class="speaker">변해성 (보급·지도)</span> 북쪽은 위험도 빨강. 그래도 구호물자 창고가 하나 남아 있다는 첩보가 있어.</p>
+          <p><span class="speaker">홍성두</span> 한결, 네가 깨어난 건 타이밍이야. 오늘 밤 ‘소규모 수색’을 할 거다. 네 체력이 버티면 같이 가라.</p>
+          <p><span class="speaker">최현준 (정찰)</span> 제가 앞장설게요. 다만… 손수민 씨 말대로라면 지하 통로가 열려 있을 수도 있어요.</p>
+        `,
+        choices: [
+          { text: "최현준의 지상 루트 수색에 참여한다.", next: "patrol_surface" },
+          { text: "손수민과 지하 통로를 먼저 정찰한다.", next: "underground" },
+        ],
+      },
+      kitchen: {
+        html: `
+          <p>급양소는 연기와 국 냄새로 따뜻하다. 김승민이 쟁반을 나른다.</p>
+          <p><span class="speaker">김승민 (조리 보조·잡일)</span> 형, 여기 미역국. 승욱 삼촌이 “한국인은…” 이러던데, 나는 그냥 라면 물 아껴달라고요.</p>
+          <p><span class="speaker">박수민 (아동·교육)</span> 어린이들 목소리 작게! 밖에 들려요!</p>
+          <p>양인열이 구석에서 조용히 기도를 올리다 한결에게 고개를 숙인다.</p>
+          <p><span class="speaker">양인열 (사목·심리)</span> 살아계시니 다행입니다. ‘왜 살아남았는지’는 천천히 찾으셔도 됩니다.</p>
+        `,
+        choices: [
+          { text: "양인열과 잠시 이야기하며 마음을 다스린다.", next: "faith_calm" },
+          { text: "박동현을 찾아가 “밖에서 사냥할 때 뭘 봤는지” 묻는다.", next: "hunter_info" },
+        ],
+      },
+      watchtower: {
+        html: `
+          <p>관측대 위 바람이 차다. 곽동헌이 쌍안경을 건넨다.</p>
+          <p><span class="speaker">곽동헌 (전 경찰·치안)</span> 저기, 북쪽 연기 기둥 보이지? 며칠 전부터 꺼지질 않아. 누군가 대규모로 태운 거야.</p>
+          <p>도시 쪽, 고층 빌딩 사이로 무언가 움직인다. 사람처럼 보였다가 곧장 무리로 흩어진다.</p>
+          <p><span class="speaker">곽동헌</span> …한결 씨, 네가 발견됐을 때 손에 쥐어져 있던 건 기억나? 작은 라디오였어. 주파수가 이 거점이랑 맞닿아 있더군.</p>
+        `,
+        choices: [
+          { text: "“라디오…?” 장현성에게 바로 가서 주파수를 맞춰본다.", next: "radio" },
+          { text: "곽동헌을 믿고 치안 순찰에 동행한다.", next: "patrol_cop" },
+        ],
+      },
+      records: {
+        html: `
+          <p>문종범의 기록실은 종이 냄새가 난다.</p>
+          <p><span class="speaker">문종범</span> 이 거점엔 사람이 많아. 최정명 같은 ‘밖 상인’ 라인도 있고, 박동현 같은 사냥꾼도 있지.</p>
+          <p><span class="speaker">문종범</span> 규칙은 간단해. 밤에 혼자 밖에 나가지 말 것. 무전 채널 바꾸지 말 것. 그리고… 누가 “구조 왔다”고 해도 함부로 문 열지 말 것.</p>
+          <p>최정명이 창고 문을 두드린다. 얼굴 절반은 스카프에 가려져 있다.</p>
+          <p><span class="speaker">최정명 (밖 세계 정보상)</span> 한결 씨? 소문 들었어. 네 이름이 어떤 ‘리스트’에 같이 올라 있다더군.</p>
+        `,
+        choices: [
+          { text: "최정명을 따라 조용히 밖 정보를 듣는다.", next: "trader_secret" },
+          { text: "의심스럽다. 홍성두에게 최정명 이야기를 넘긴다.", next: "report_trader" },
+        ],
+      },
+      research: {
+        html: `
+          <p><span class="speaker">류영재</span> 도시 중심부에 ‘군집’이 생겼어. 단순히 많은 게 아니라… 움직임이 맞춰져. 마치 한 몸처럼.</p>
+          <p><span class="speaker">김주연</span> (낮게) 너무 무섭게 말하지 마요. 환자한테.</p>
+          <p><span class="speaker">류영재</span> 미안. 하지만 사실이야. 그래서 우리는 ‘소음’을 최소화하는 게 생존이고.</p>
+        `,
+        choices: [
+          { text: "저녁 회의에서 류영재의 보고를 직접 듣자고 한다.", next: "evening_meeting" },
+          { text: "맹주훈에게 차량으로 철수 가능성을 묻는다.", next: "vehicle_talk" },
+        ],
+      },
+      evening_meeting: {
+        html: `
+          <p>밤, 사람들이 모인다. 홍성두가 판자 테이블을 두드린다.</p>
+          <p><span class="speaker">홍성두</span> 요지는 하나다. 보급이 떨어졌다. 북쪽 창고를 노릴 거면 지금이 마지막 창구다.</p>
+          <p><span class="speaker">류영재</span> 반대. 군집이 움직이기 시작했어. 소음 나면 거점 전체가 위험해.</p>
+          <p><span class="speaker">최현준</span> 정찰로 최소 인원만 가면 됩니다.</p>
+          <p><span class="speaker">손수민 (잠입·은신)</span> 지하로 가면 위에서 소리가 덜 새요. 대신 길 잃으면 끝이에요.</p>
+          <p><span class="speaker">김경훈 (장애물·구조)</span> 펜스 보강도 사람이 필요해요. 저는 남겠습니다.</p>
+          <p>모두가 한결을 본다. “너는 누구 편에 설 거야?” 같은 시선이다.</p>
+        `,
+        choices: [
+          { text: "최현준을 따라 지상으로 짧게 파고든다.", next: "follow_scout" },
+          { text: "손수민을 따라 지하 통로로 잠입한다.", next: "follow_stealth" },
+          { text: "김경훈·박승호와 남아 거점을 지킨다.", next: "follow_defense" },
+        ],
+      },
+      night_signal: {
+        html: `
+          <p>밤의 통신소. 장현성이 이승필과 함께 안테나 각도를 조정한다.</p>
+          <p>신호가 선명해진 순간, 스피커에서 웃음 섞인 목소리가 터진다.</p>
+          <p><span class="speaker">???</span> 김한결… 찾았다. 오지 마. …아니, 와. 네가 있어야 ‘완성’이거든.</p>
+          <p><span class="speaker">이승필</span> 전원 꺼! 역추적당해!</p>
+          <p>거점 바깥에서 사이렌 같은 소리가 울리기 시작한다. 군집이 움직인다.</p>
+        `,
+        choices: [
+          { text: "홍성두에게 바로 보고하고 비상 소집을 요청한다.", next: "crisis_rally" },
+          { text: "스스로 북쪽으로 나가 목소리의 주인을 찾는다.", next: "foolhardy" },
+        ],
+      },
+      defense_path: {
+        html: `
+          <p>한결은 땀으로 범벅이 된 채 모래주머니를 나른다. 박승호가 짧게 고맙다고 말한다.</p>
+          <p>해가 지고, 저녁 회의 소식이 돈다. “북쪽 창고.”</p>
+        `,
+        choices: [
+          { text: "회의에 참석해 최종 동행을 고른다.", next: "evening_meeting" },
+        ],
+      },
+      scout_escape: {
+        html: `
+          <p>최현준은 담배 대신 막대사탕을 물고 있다.</p>
+          <p><span class="speaker">최현준</span> 탈출 루트? 있지. 다만 차 한 대, 연료 반 통, 그리고 운이 한 트럭 분은 필요해.</p>
+          <p><span class="speaker">최현준</span> 네가 깨어난 건 우연이 아닐 수도 있어. 정찰병 감각으로는… 네 주변 공기가 달라.</p>
+        `,
+        choices: [
+          { text: "그래도 거점에 남는 쪽이 낫다고 본다.", next: "evening_meeting" },
+          { text: "차량 탈출을 맹주훈과 구체적으로 논의한다.", next: "vehicle_talk" },
+        ],
+      },
+      patrol_surface: {
+        html: `
+          <p>지상 루트는 차량 잔해 사이를 비집고 간다. 최현준이 손짓으로 속도를 맞춘다.</p>
+          <p>창고 입구에서 손전등이 번쩍인다. 살아 있는 사람… 같다가, 고개가 비정상적으로 꺾인다.</p>
+          <p><span class="speaker">최현준</span> 뒤로! 이건 ‘감염자’야!</p>
+        `,
+        choices: [
+          { text: "도망치며 무전으로 거점에 경고한다.", next: "crisis_rally" },
+          { text: "최현준을 끌고 엄폐물 뒤로 몸을 숨긴다.", next: "hide_together" },
+        ],
+      },
+      underground: {
+        html: `
+          <p>지하는 물이 고여 있고 손전등 빛만이 물결을 깬다. 손수민이 앞장선다.</p>
+          <p><span class="speaker">손수민</span> 발소리. 세 번. 우리 말고… 누군가 따라와요.</p>
+          <p>통로 끝, 철문 너머에서 긁는 소리.</p>
+        `,
+        choices: [
+          { text: "철문을 열지 않고 돌아가 다른 출구를 찾는다.", next: "stealth_safe" },
+          { text: "문을 열고 빠르게 통과한다.", next: "stealth_risk" },
+        ],
+      },
+      faith_calm: {
+        html: `
+          <p><span class="speaker">양인열</span> 죄책감부터 갖지 마세요. 여기 사람들은 다 누군가를 잃었습니다.</p>
+          <p>한결의 손끝이 떨리는 게 조금 가라앉는다.</p>
+        `,
+        choices: [
+          { text: "저녁 회의로 향한다.", next: "evening_meeting" },
+        ],
+      },
+      hunter_info: {
+        html: `
+          <p>박동현은 활시위를 만지작거린다.</p>
+          <p><span class="speaker">박동현 (사냥·원거리)</span> 북쪽 숲 쪽에서 사람 발자국이 끊겼어. 마지막은… 끌려간 듯한 자국이었지.</p>
+          <p><span class="speaker">박동현</span> 네가 거기 있었다면, 넌 운이 좋았거나… 누군가 널 ‘남겨둔’ 거야.</p>
+        `,
+        choices: [
+          { text: "저녁 회의에서 선택을 한다.", next: "evening_meeting" },
+        ],
+      },
+      patrol_cop: {
+        html: `
+          <p>곽동헌과 함께한 순찰은 무난하다. 다만 곽동헌이 중간중간 한결의 표정을 읽는다.</p>
+          <p><span class="speaker">곽동헌</span> 네가 뭘 숨기든, 지금은 ‘여기 사람’이야. 그것만 기억해.</p>
+        `,
+        choices: [
+          { text: "저녁 회의로.", next: "evening_meeting" },
+        ],
+      },
+      trader_secret: {
+        html: `
+          <p>창고 뒤, 최정명이 낮게 말한다.</p>
+          <p><span class="speaker">최정명</span> 북쪽 창고엔 물자만 있는 게 아니야. 예전 실험실에서 빼돌린 ‘표본 상자’도 있다더군. 네 이름이 그 상자 라벨 옆에 적혀 있었다는 소문도 있고.</p>
+          <p><span class="speaker">김한결</span> …뭐?</p>
+          <p><span class="speaker">최정명</span> 진실은 네 눈으로 확인해야지. 나는 돈만 받으면 길은 열어줄 수 있어.</p>
+        `,
+        choices: [
+          { text: "거래를 받아들이고 밤에 몰래 움직인다.", next: "trader_night" },
+          { text: "거절하고 공식 루트(회의)로 간다.", next: "evening_meeting" },
+        ],
+      },
+      report_trader: {
+        html: `
+          <p>홍성두의 눈이 가늘어진다.</p>
+          <p><span class="speaker">홍성두</span> 최정명은 위험한 맛이 있지. 하지만 지금은 그의 ‘밖 정보’가 필요해. 일단 감시를 붙일게.</p>
+          <p>맹주훈이 끄덕인다. “차는 준비돼 있어.”</p>
+        `,
+        choices: [
+          { text: "회의에서 공식 파견대를 택한다.", next: "evening_meeting" },
+        ],
+      },
+      vehicle_talk: {
+        html: `
+          <p><span class="speaker">맹주훈</span> 트럭 한 대는 살아있어. 문제는 길이지. 펜스 밖으로 나가는 순간부터는 소음이 생명이야.</p>
+          <p><span class="speaker">김경훈</span> 제가 선행해서 장애물을 치울게요. 시간은… 7분. 그 안에 시동 걸어야 해요.</p>
+        `,
+        choices: [
+          { text: "저녁 회의로 돌아가 동행을 고른다.", next: "evening_meeting" },
+        ],
+      },
+      follow_scout: {
+        html: `
+          <p>최현준의 뒤를 따른다. 폐차 사이, 창고 그림자, 부서진 간판 아래.</p>
+          <p>창고 안, 상자들이 쌓여 있다. 그리고 구석에 작은 금고 같은 것—라벨에 희미하게 <strong>한결 / 대조군 B</strong> 같은 글자가 보인다.</p>
+          <p><span class="speaker">최현준</span> …이건 가져가면 안 될 것 같은데.</p>
+          <p>밖에서 군집의 발소리가 바닥을 울린다.</p>
+        `,
+        choices: [
+          { text: "상자는 두고 물자만 챙겨 조용히 철수한다.", next: "end_pragmatic" },
+          { text: "상자를 열어 자신과 관련된 진실을 본다.", next: "end_truth" },
+        ],
+      },
+      follow_stealth: {
+        html: `
+          <p>손수민이 손가락으로 숫자를 세어 보인다. 셋, 둘, 하나—철문을 열고 미끄러지듯 빠져나간다.</p>
+          <p>창고 하층, 어둠 속에 사람 형체가 쓰러져 있다. 살아 있는 사람이다. 류영재가 알던 ‘실험실 조교수’였다고 손수민이 속삭인다.</p>
+          <p>조교수가 한결의 얼굴을 보더 입을 뗀다. “…도망쳐. 넌… 키가 아니라…”</p>
+          <p>그 순간 상층에서 무언가 떨어지는 소리.</p>
+        `,
+        choices: [
+          { text: "조교수를 끌고 거점으로 돌아간다.", next: "end_rescue" },
+          { text: "소음을 유발하지 않기 위해 물자만 챙기고 조교수를 남긴다.", next: "end_cold" },
+        ],
+      },
+      follow_defense: {
+        html: `
+          <p>김경훈이 철근을 용접하고, 박승호가 방패벽을 세운다. 한결은 못이 들어가는 자리를 찾아 망치질한다.</p>
+          <p>밤중, 북쪽에서 불빛이 번쩍인다. 수색대가 걸렸다는 무전이 온다.</p>
+          <p><span class="speaker">홍성두</span> 펜스 전원! 지금이야!</p>
+          <p>한결은 스위치를 당긴다. 전기 울림이 순간적으로 밖으로 새고, 군집이 거점 쪽으로 고개를 돌린다.</p>
+        `,
+        choices: [
+          { text: "스위치를 다시 꺼 거점을 조용히 하고, 밖의 수색대를 무전으로 불러들인다.", next: "end_sacrifice_hint" },
+          { text: "문종범이 말한 ‘구조 왔다’ 채널로 허위 신호를 보내 군집을 북쪽으로 돌린다.", next: "end_trick" },
+        ],
+      },
+      crisis_rally: {
+        html: `
+          <p>사람들이 깨어난다. 곽동헌이 성벽에 올라 총소리를 내지 말라고 소리친다.</p>
+          <p>류영재가 지도를 펼친다. “군집 이동 예측 경로.” 변해성이 물자를 나눈다.</p>
+          <p>홍성두가 한결의 어깨를 잡는다.</p>
+          <p><span class="speaker">홍성두</span> 네가 끌어온 소동일 수도 있고, 아닐 수도 있어. 중요한 건 지금 이 순간이야.</p>
+        `,
+        choices: [
+          { text: "거점 방어에 전념한다.", next: "follow_defense" },
+          { text: "최현준과 함께 북쪽으로 나가 소음의 원인을 끊는다.", next: "patrol_surface" },
+        ],
+      },
+      foolhardy: {
+        html: `
+          <p>혼자 밤길을 나선 건 실수였다. 골목 끝, 그림자가 말을 건다.</p>
+          <p><span class="speaker">???</span> 용감하네. 실험은 아직 끝나지 않았는데.</p>
+          <p>의식이 끊기기 직전, 멀리서 곽동헌의 손전등이 흔들린다.</p>
+        `,
+        choices: [
+          { text: "다음 이야기로…", next: "end_ambush" },
+        ],
+      },
+      hide_together: {
+        html: `
+          <p>엄폐물 뒤, 두 사람의 숨소리만 맞닿는다. 최현준이 귓속말한다.</p>
+          <p>“저거… 사람이 아니야. 하지만 움직임은 사람을 따라.”</p>
+          <p>한결은 문득, 자신이 이틀 전 본 ‘그것’의 윤곽을 떠올린다. 기억이 칼처럼 돌아온다.</p>
+        `,
+        choices: [
+          { text: "기억을 믿고 거점에 경고를 보낸 뒤 철수한다.", next: "evening_meeting" },
+        ],
+      },
+      stealth_safe: {
+        html: `
+          <p>돌아가는 길은 길었지만 조용했다. 손수민이 한결의 소매를 놓지 않는다.</p>
+          <p>지휘소에서 홍성두가 고개를 끄덕인다. “좋은 판단이었어.”</p>
+        `,
+        choices: [
+          { text: "회의에서 다시 동행을 고른다.", next: "evening_meeting" },
+        ],
+      },
+      stealth_risk: {
+        html: `
+          <p>문이 열리는 순간, 매달린 시체 더미가 우르르 쏟아진다. 소음이 폭발한다.</p>
+          <p>손수민이 욕설 대신 숫자를 외운다. “이십 초!” 둘은 달린다.</p>
+        `,
+        choices: [
+          { text: "거점으로 전력 질주한다.", next: "crisis_rally" },
+        ],
+      },
+      trader_night: {
+        html: `
+          <p>최정명이 연 쪽문 너머, 북쪽 창고의 뒷길이 보인다.</p>
+          <p>그러나 곽동헌이 그림자처럼 나타난다. “거래는 내가 승인해야지.”</p>
+          <p>셋은 어색하게 동행한다. 창고에서 금고를 발견하고—한결은 손이 떨린다.</p>
+        `,
+        choices: [
+          { text: "금고를 연다.", next: "end_truth" },
+          { text: "금고는 두고 물자만 챙긴다.", next: "end_pragmatic" },
+        ],
+      },
+      end_pragmatic: {
+        ending: "생존자의 선택",
+        endingClass: "good",
+        html: `
+          <p>한결은 상자를 두고 물자만 챙긴다. 최현준(또는 동행)이 안도의 숨을 내쉰다.</p>
+          <p>거점으로 돌아온 뒤, 홍성두는 말한다. “진실은 때로 독이야. 오늘은 살아남았다.”</p>
+          <p>김주연이 붕대를 감아 주고, 김승욱이 뜨거운 국을 건넨다. 밖은 여전히 지옥이지만, 사람들 사이에는 좁은 온기가 있다.</p>
+          <p><span class="speaker">김한결 (독백)</span> 내가 누구였든… 지금은 여기서 숨 쉬고 있어. 그걸로 오늘은 충분해.</p>
+        `,
+      },
+      end_truth: {
+        ending: "라벨의 진실",
+        endingClass: "neutral",
+        html: `
+          <p>금고 안에는 서류와 채혈 기록, 그리고 사진이 있다. 어린 시절의 한결—그리고 ‘감염 억제제 전임상’이라는 문구.</p>
+          <p>최현준이 입술을 깨문다. 류영재가 나중에 말한다. “네 혈액이… 군집의 ‘주파수’와 간섭할 수 있어.”</p>
+          <p>홍성두는 오래 침묵하다 말한다. “네가 도구였는지, 희생이었는지는 나중 문제다. 지금은 네가 사람이야.”</p>
+          <p>한결은 진실의 무게에 짓눌리지만, 동시에 분노가 싹튼다. 누가 자신을 ‘라벨’로만 봤는지—그리고 그걸 끊을 날이 올 것이다.</p>
+        `,
+      },
+      end_rescue: {
+        ending: "손에 쥔 생명",
+        endingClass: "good",
+        html: `
+          <p>조교수는 거점에 살려졌다. 김주연이 필사적으로 붕대를 감고, 박수민이 물을 떠온다.</p>
+          <p>조교수는 희미하게 말한다. “한결… 넌 실패작이 아니야. 넌… 스위치야.”</p>
+          <p>손수민이 한결의 등을 두드린다. “들켰을 뻔했는데, 잘했어요.”</p>
+          <p>밤, 양인열이 조용히 기도를 올린다. 문종범이 기록지에 ‘구조 성공’이라고 적는다.</p>
+        `,
+      },
+      end_cold: {
+        ending: "조용한 밤의 대가",
+        endingClass: "neutral",
+        html: `
+          <p>물자는 확보됐지만, 조교수는 그 자리에 남는다. 손수민의 눈이 차갑게 흔들린다.</p>
+          <p>돌아온 뒤 손수민은 한결을 피한다. 최현준만이 낮게 말한다. “책임은 공동이야. 네가 혼자 지울 거 없어.”</p>
+          <p>그래도 거점은 하루를 버틴다. 변해성이 물자를 나누고, 이승필이 전등을 하나 더 끈다.</p>
+          <p><span class="speaker">김한결 (독백)</span> 살아남는 게… 항상 옳은 건 아니구나.</p>
+        `,
+      },
+      end_sacrifice_hint: {
+        ending: "스위치를 당긴 밤",
+        endingClass: "good",
+        html: `
+          <p>한결은 스위치를 끈다. 거점의 불빛이 꺼지고, 군집의 시선이 잠시 흐려진다.</p>
+          <p>무전으로 수색대가 숨을 고르며 들어온다. 맹주훈이 문을 닫고, 박승호가 마지막 손님을 끌어당긴다.</p>
+          <p>홍성두가 한결의 손등을 본다. 망치 자국이 피어 있다.</p>
+          <p><span class="speaker">홍성두</span> 오늘 밤의 영웅은 네가 아니라, 스위치를 믿은 전부야. 근데… 고마워.</p>
+          <p>김경훈이 고개를 숙인다. “펜스, 내일까지 버틸게요.”</p>
+        `,
+      },
+      end_trick: {
+        ending: "거짓 구조 신호",
+        endingClass: "good",
+        html: `
+          <p>문종범이 막아선 채널을 한결이 직접 조작한다. 장현성이 손을 얹어 주파수를 맞춘다.</p>
+          <p>북쪽으로 가짜 구조 신호가 흘러간다. 군집의 움직임이 미세하게 꺾인다.</p>
+          <p>최정명이 씨익 웃는다. “이건… 값이 나가.” 곽동헌이 그의 어깨를 붙잡는다. “나중에 청구하지.”</p>
+          <p>거점은 또 한 번의 밤을 샌다. 류영재가 중얼거린다. “과학과 사기의 경계…”</p>
+        `,
+      },
+      end_ambush: {
+        ending: "끊긴 실선",
+        endingClass: "",
+        html: `
+          <p>한결은 다시 의식을 잃는다. 마지막으로 들리는 건 홍성두의 욕설 같은 외침과, 김주연의 날카로운 “맥박 있어요!”다.</p>
+          <p>이야기는 여기서 한 박자 끊긴다. 다음에 깨어날 때는… 또 다른 천막일지, 다른 무리일지, 아니면 같은 사람들일지.</p>
+          <p class="mono">(도전 엔딩: 혼자 밖으로 나가지 말 것 — 문종범의 규칙)</p>
+        `,
+      },
+    };
+
+    function render(sceneId) {
+      const scene = scenes[sceneId];
+      if (!scene) {
+        storyEl.innerHTML = "<p>씬을 찾을 수 없습니다.</p>";
+        choicesEl.innerHTML = "";
+        return;
+      }
+      let html = scene.html;
+      if (scene.ending) {
+        html += `<p><span class="ending-tag ${scene.endingClass || ""}">엔딩: ${scene.ending}</span></p>`;
+        html += `<button type="button" class="restart" id="restartBtn">처음부터 다시</button>`;
+      }
+      storyEl.innerHTML = html;
+      choicesEl.innerHTML = "";
+      if (scene.choices && scene.choices.length) {
+        scene.choices.forEach((c) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "choice";
+          btn.textContent = c.text;
+          btn.addEventListener("click", () => render(c.next));
+          choicesEl.appendChild(btn);
+        });
+      }
+      const restart = document.getElementById("restartBtn");
+      if (restart) {
+        restart.addEventListener("click", () => render("start"));
+      }
+      storyEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    render("start");
+  </script>
+</body>
+</html>
