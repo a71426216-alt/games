@@ -1,210 +1,263 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐍 지렁이 게임</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>🐍 지렁이 게임</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        body {
-            background: #0a0a2e;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
+    :root {
+        --size: min(94vw, 62vh, 640px);
+        --btn: clamp(60px, 18vw, 84px);
+    }
+    @supports (height: 1dvh) {
+        :root { --size: min(94vw, 62dvh, 640px); }
+    }
+
+    /* 터치 기기 / 좁은 화면: 방향키 공간만큼 판을 줄여서 한 화면에 다 들어오게 */
+    @media (pointer: coarse), (max-width: 700px) {
+        :root { --size: min(94vw, max(240px, calc(100vh - 400px)), 640px); }
+        @supports (height: 1dvh) {
+            :root { --size: min(94vw, max(240px, calc(100dvh - 400px)), 640px); }
         }
+    }
 
-        .game-wrapper {
-            text-align: center;
+    body {
+        background: radial-gradient(circle at 50% 0%, #1a1a4e 0%, #0a0a2e 60%) #0a0a2e;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+        font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+        overscroll-behavior: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    .game-wrapper {
+        width: var(--size);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    h1 {
+        color: #00ff88;
+        font-size: clamp(1.3rem, 5.5vw, 2.1rem);
+        text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        letter-spacing: 2px;
+        white-space: nowrap;
+    }
+
+    .score-board {
+        display: flex;
+        align-items: stretch;
+        width: 100%;
+        gap: 6px;
+    }
+
+    .score-item {
+        flex: 1;
+        text-align: center;
+        font-size: clamp(0.72rem, 3.3vw, 1rem);
+        background: rgba(255, 255, 255, 0.08);
+        padding: 6px 4px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        white-space: nowrap;
+    }
+
+    .score-item span {
+        color: #ffcc00;
+        font-weight: 700;
+        font-size: 1.2em;
+    }
+
+    .icon-btn {
+        flex: 0 0 auto;
+        width: 44px;
+        display: grid;
+        place-items: center;
+        color: #00ff88;
+        background: rgba(0, 255, 136, 0.12);
+        border: 1px solid rgba(0, 255, 136, 0.5);
+        border-radius: 20px;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+    .icon-btn svg { width: 16px; height: 16px; fill: currentColor; }
+    .icon-btn:disabled { opacity: 0.3; cursor: default; }
+
+    .board {
+        position: relative;
+        width: 100%;
+        touch-action: none;
+    }
+
+    canvas {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        display: block;
+        border: 2px solid #00ff88;
+        border-radius: 10px;
+        box-shadow: 0 0 30px rgba(0, 255, 136, 0.2);
+        background: #111133;
+        touch-action: none;
+    }
+
+    .overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(5, 5, 30, 0.6);
+        border-radius: 10px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+    .overlay.active { opacity: 1; pointer-events: auto; }
+
+    .overlay-content {
+        background: rgba(10, 10, 46, 0.96);
+        border: 2px solid #00ff88;
+        border-radius: 16px;
+        padding: clamp(18px, 5vw, 34px) clamp(22px, 7vw, 46px);
+        text-align: center;
+        box-shadow: 0 0 60px rgba(0, 255, 136, 0.3);
+        transform: scale(0.85);
+        transition: transform 0.25s ease;
+        max-width: 92%;
+    }
+    .overlay.active .overlay-content { transform: scale(1); }
+
+    .overlay h2 { color: #00ff88; font-size: clamp(1.3rem, 5vw, 2rem); margin-bottom: 8px; }
+    .overlay p { color: #ccc; font-size: clamp(0.9rem, 3.2vw, 1.1rem); margin-bottom: 6px; }
+    .overlay .sub { font-size: 0.85rem; color: #8a8aaa; }
+    .final-score { color: #ffcc00; font-size: clamp(2rem, 9vw, 2.8rem); font-weight: 700; margin: 10px 0; }
+
+    .btn {
+        background: linear-gradient(135deg, #00ff88, #00cc6a);
+        color: #0a0a2e;
+        border: none;
+        padding: 12px 36px;
+        min-height: 48px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        border-radius: 30px;
+        cursor: pointer;
+        margin-top: 14px;
+        transition: transform 0.15s, box-shadow 0.15s;
+        letter-spacing: 1px;
+        touch-action: manipulation;
+    }
+    .btn:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(0, 255, 136, 0.5); }
+    .btn:active { transform: scale(0.97); }
+
+    .controls-info { color: rgba(255, 255, 255, 0.5); font-size: 0.9rem; text-align: center; line-height: 1.8; }
+    .controls-info kbd {
+        background: rgba(255, 255, 255, 0.12);
+        padding: 2px 9px;
+        border-radius: 5px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        font-family: inherit;
+        color: #fff;
+    }
+
+    /* 모바일 방향키 */
+    .dpad {
+        display: none;
+        grid-template-columns: repeat(3, var(--btn));
+        grid-template-rows: repeat(3, var(--btn));
+        gap: 8px;
+        margin-top: 4px;
+        touch-action: none;
+    }
+    .dpad button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 255, 136, 0.16);
+        border: 2px solid rgba(0, 255, 136, 0.65);
+        border-radius: 18px;
+        cursor: pointer;
+        touch-action: none;
+        transition: background 0.08s, transform 0.08s;
+    }
+    .dpad button.pressed { background: rgba(0, 255, 136, 0.5); transform: scale(0.93); }
+    .dpad svg { width: 46%; height: 46%; fill: #00ff88; pointer-events: none; }
+    .dpad .up    { grid-column: 2; grid-row: 1; }
+    .dpad .left  { grid-column: 1; grid-row: 2; }
+    .dpad .right { grid-column: 3; grid-row: 2; }
+    .dpad .down  { grid-column: 2; grid-row: 3; }
+    .dpad .left svg  { transform: rotate(-90deg); }
+    .dpad .right svg { transform: rotate(90deg); }
+    .dpad .down svg  { transform: rotate(180deg); }
+
+    @media (pointer: coarse), (max-width: 700px) {
+        .dpad { display: grid; }
+        .controls-info { display: none; }
+    }
+
+    /* 가로 모드 폰: 방향키를 오른쪽 아래에 띄워서 판이 작아지지 않게 */
+    @media (pointer: coarse) and (orientation: landscape) and (max-height: 520px) {
+        :root { --size: min(60vw, max(200px, calc(100vh - 120px))); --btn: 62px; }
+        @supports (height: 1dvh) {
+            :root { --size: min(60vw, max(200px, calc(100dvh - 120px))); }
         }
-
-        h1 {
-            color: #00ff88;
-            font-size: 2.2rem;
-            margin-bottom: 10px;
-            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
-            letter-spacing: 3px;
+        h1, .controls-info { display: none; }
+        .dpad {
+            position: fixed;
+            right: calc(14px + env(safe-area-inset-right));
+            bottom: calc(14px + env(safe-area-inset-bottom));
+            margin: 0;
+            opacity: 0.92;
         }
-
-        .score-board {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin-bottom: 12px;
-        }
-
-        .score-item {
-            color: #fff;
-            font-size: 1.1rem;
-            background: rgba(255,255,255,0.08);
-            padding: 6px 22px;
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .score-item span {
-            color: #ffcc00;
-            font-weight: bold;
-            font-size: 1.3rem;
-        }
-
-        canvas {
-            border: 2px solid #00ff88;
-            border-radius: 8px;
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2), inset 0 0 60px rgba(0,0,0,0.3);
-            background: #111133;
-            display: block;
-            margin: 0 auto;
-        }
-
-        .controls-info {
-            color: rgba(255,255,255,0.5);
-            margin-top: 14px;
-            font-size: 0.9rem;
-        }
-
-        .controls-info kbd {
-            background: rgba(255,255,255,0.12);
-            padding: 3px 10px;
-            border-radius: 5px;
-            border: 1px solid rgba(255,255,255,0.2);
-            font-family: inherit;
-            color: #fff;
-        }
-
-        .overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-        }
-
-        .overlay.active { pointer-events: all; }
-
-        .overlay-content {
-            background: rgba(10, 10, 46, 0.95);
-            border: 2px solid #00ff88;
-            border-radius: 16px;
-            padding: 40px 50px;
-            text-align: center;
-            box-shadow: 0 0 60px rgba(0, 255, 136, 0.3);
-            transform: scale(0);
-            transition: transform 0.3s ease;
-        }
-
-        .overlay.active .overlay-content {
-            transform: scale(1);
-        }
-
-        .overlay h2 {
-            color: #00ff88;
-            font-size: 2rem;
-            margin-bottom: 10px;
-        }
-
-        .overlay p {
-            color: #ccc;
-            font-size: 1.1rem;
-            margin-bottom: 8px;
-        }
-
-        .overlay .final-score {
-            color: #ffcc00;
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin: 15px 0;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #00ff88, #00cc6a);
-            color: #0a0a2e;
-            border: none;
-            padding: 12px 36px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            margin-top: 15px;
-            transition: transform 0.15s, box-shadow 0.15s;
-            letter-spacing: 1px;
-        }
-
-        .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 25px rgba(0, 255, 136, 0.5);
-        }
-
-        .mobile-controls {
-            display: none;
-            margin-top: 16px;
-            gap: 6px;
-        }
-
-        .mobile-controls button {
-            width: 60px;
-            height: 60px;
-            font-size: 1.6rem;
-            background: rgba(0, 255, 136, 0.15);
-            color: #00ff88;
-            border: 2px solid rgba(0, 255, 136, 0.3);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.1s;
-        }
-
-        .mobile-controls button:active {
-            background: rgba(0, 255, 136, 0.4);
-        }
-
-        .d-pad {
-            display: grid;
-            grid-template-areas:
-                ".  up  ."
-                "left . right"
-                ".  down .";
-            gap: 6px;
-        }
-
-        .d-pad .up    { grid-area: up; }
-        .d-pad .down  { grid-area: down; }
-        .d-pad .left  { grid-area: left; }
-        .d-pad .right { grid-area: right; }
-
-        @media (max-width: 600px) {
-            h1 { font-size: 1.5rem; }
-            .mobile-controls { display: block; }
-            .controls-info { display: none; }
-        }
-    </style>
+    }
+</style>
 </head>
 <body>
 
 <div class="game-wrapper">
     <h1>🐍 지렁이 게임</h1>
+
     <div class="score-board">
         <div class="score-item">점수 <span id="score">0</span></div>
         <div class="score-item">최고 <span id="highScore">0</span></div>
         <div class="score-item">레벨 <span id="level">1</span></div>
+        <button class="icon-btn" id="pauseBtn" aria-label="일시정지" disabled>
+            <svg viewBox="0 0 16 16"><rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/></svg>
+        </button>
     </div>
-    <div style="position:relative; display:inline-block;">
+
+    <div class="board">
         <canvas id="gameCanvas"></canvas>
+
         <div class="overlay active" id="startOverlay">
             <div class="overlay-content">
                 <h2>🐍 지렁이 게임</h2>
                 <p>먹이를 먹고 지렁이를 키워보세요!</p>
-                <p style="font-size:0.9rem; color:#888;">벽이나 자기 몸에 닿으면 게임 오버</p>
+                <p class="sub">벽이나 자기 몸에 닿으면 게임 오버<br>★ 보너스 먹이는 잠깐만 나타나요</p>
                 <button class="btn" id="startBtn">게임 시작</button>
             </div>
         </div>
+
+        <div class="overlay" id="pauseOverlay">
+            <div class="overlay-content">
+                <h2>⏸ 일시정지</h2>
+                <button class="btn" id="resumeBtn">계속하기</button>
+            </div>
+        </div>
+
         <div class="overlay" id="gameOverOverlay">
             <div class="overlay-content">
-                <h2>💀 게임 오버</h2>
+                <h2 id="overTitle">💀 게임 오버</h2>
                 <p>최종 점수</p>
                 <div class="final-score" id="finalScore">0</div>
                 <p id="newHighMsg" style="color:#ffcc00; display:none;">🎉 새로운 최고 기록!</p>
@@ -212,300 +265,450 @@
             </div>
         </div>
     </div>
+
     <div class="controls-info">
-        <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> 또는 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 로 이동 &nbsp;|&nbsp; <kbd>P</kbd> 일시정지
+        <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> 또는 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동<br>
+        <kbd>Space</kbd> / <kbd>P</kbd> 일시정지 &nbsp;·&nbsp; <kbd>Enter</kbd> 시작
     </div>
-    <div class="mobile-controls">
-        <div class="d-pad">
-            <button class="up" onclick="setDir(0,-1)">▲</button>
-            <button class="left" onclick="setDir(-1,0)">◀</button>
-            <button class="right" onclick="setDir(1,0)">▶</button>
-            <button class="down" onclick="setDir(0,1)">▼</button>
-        </div>
+
+    <div class="dpad" id="dpad">
+        <button class="up"    data-dir="0,-1" aria-label="위"><svg viewBox="0 0 24 24"><path d="M12 5 3 18h18z"/></svg></button>
+        <button class="left"  data-dir="-1,0" aria-label="왼쪽"><svg viewBox="0 0 24 24"><path d="M12 5 3 18h18z"/></svg></button>
+        <button class="right" data-dir="1,0"  aria-label="오른쪽"><svg viewBox="0 0 24 24"><path d="M12 5 3 18h18z"/></svg></button>
+        <button class="down"  data-dir="0,1"  aria-label="아래"><svg viewBox="0 0 24 24"><path d="M12 5 3 18h18z"/></svg></button>
     </div>
 </div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
+(() => {
+'use strict';
+
+/* ───────── 설정 ───────── */
+const COLS = 20, ROWS = 20;
+const CELL = 32;                       // 내부 좌표 기준 한 칸 크기 (화면 크기와 무관)
+const W = COLS * CELL, H = ROWS * CELL;
+const SPECIAL_MS = 7000;               // 보너스 먹이 유지 시간
+const stepForLevel = l => Math.max(65, 135 - (l - 1) * 7);   // 한 칸 이동에 걸리는 시간(ms)
+
+const $ = id => document.getElementById(id);
+const canvas = $('gameCanvas');
 const ctx = canvas.getContext('2d');
+const pauseBtn = $('pauseBtn');
 
-const CELL = 20;
-const COLS = 25;
-const ROWS = 25;
-canvas.width = COLS * CELL;
-canvas.height = ROWS * CELL;
+/* ───────── 상태 ───────── */
+let state = 'ready';                   // ready | playing | paused | dying | over
+let snake, prev, dir, queue, food, special;
+let score = 0, eaten = 0, level = 1, stepMs = 135, acc = 0, lastAlpha = 0;
+let particles = [], toast = null, shake = 0, deathTimer = 0, won = false, newRecord = false;
+let highScore = 0;
+try { highScore = parseInt(localStorage.getItem('snakeHighScore') || '0', 10) || 0; } catch (e) {}
 
-let snake, dir, nextDir, food, specialFood, score, highScore, level, speed, gameLoop, paused, particles;
+/* ───────── 화면 크기 (선명하게) ───────── */
+function resizeCanvas() {
+    const r = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const px = Math.max(1, Math.round(r.width * dpr));
+    if (canvas.width !== px || canvas.height !== px) { canvas.width = px; canvas.height = px; }
+}
+if (window.ResizeObserver) new ResizeObserver(resizeCanvas).observe(canvas);
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 200));
 
-highScore = parseInt(localStorage.getItem('snakeHighScore') || '0');
-document.getElementById('highScore').textContent = highScore;
-
+/* ───────── 초기화 ───────── */
 function init() {
-    const midX = Math.floor(COLS / 2);
-    const midY = Math.floor(ROWS / 2);
-    snake = [
-        { x: midX, y: midY },
-        { x: midX - 1, y: midY },
-        { x: midX - 2, y: midY }
-    ];
+    const mx = Math.floor(COLS / 2), my = Math.floor(ROWS / 2);
+    snake = [{ x: mx, y: my }, { x: mx - 1, y: my }, { x: mx - 2, y: my }];
+    prev = snake.map(c => ({ x: c.x, y: c.y }));
     dir = { x: 1, y: 0 };
-    nextDir = { x: 1, y: 0 };
-    score = 0;
-    level = 1;
-    speed = 120;
-    paused = false;
-    particles = [];
-    specialFood = null;
-    updateUI();
+    queue = [];
+    score = 0; eaten = 0; level = 1;
+    stepMs = stepForLevel(1);
+    acc = 0; lastAlpha = 0;
+    particles = []; toast = null; shake = 0; won = false; newRecord = false;
+    special = null;
     placeFood();
+    updateUI();
+}
+
+function randomFreeCell() {
+    const taken = new Set(snake.map(c => c.x + ',' + c.y));
+    if (food) taken.add(food.x + ',' + food.y);
+    if (special) taken.add(special.x + ',' + special.y);
+    const free = [];
+    for (let y = 0; y < ROWS; y++)
+        for (let x = 0; x < COLS; x++)
+            if (!taken.has(x + ',' + y)) free.push({ x, y });
+    return free.length ? free[Math.floor(Math.random() * free.length)] : null;
 }
 
 function placeFood() {
-    let pos;
-    do {
-        pos = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
-    } while (snake.some(s => s.x === pos.x && s.y === pos.y));
-    food = pos;
+    food = null;
+    const c = randomFreeCell();
+    if (!c) return false;
+    food = c;
+    return true;
+}
 
-    if (score > 0 && score % 5 === 0 && !specialFood) {
-        let sPos;
-        do {
-            sPos = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
-        } while (snake.some(s => s.x === sPos.x && s.y === sPos.y) || (sPos.x === food.x && sPos.y === food.y));
-        specialFood = { ...sPos, timer: 80 };
-    }
+function spawnSpecial() {
+    if (special) return;
+    const c = randomFreeCell();
+    if (c) special = { x: c.x, y: c.y, left: SPECIAL_MS, total: SPECIAL_MS };
 }
 
 function updateUI() {
-    document.getElementById('score').textContent = score;
-    document.getElementById('level').textContent = level;
-    document.getElementById('highScore').textContent = highScore;
+    $('score').textContent = score;
+    $('level').textContent = level;
+    $('highScore').textContent = Math.max(highScore, score);
 }
 
-function spawnParticles(x, y, color, count) {
-    for (let i = 0; i < count; i++) {
+function setState(s) {
+    state = s;
+    $('startOverlay').classList.toggle('active', s === 'ready');
+    $('pauseOverlay').classList.toggle('active', s === 'paused');
+    $('gameOverOverlay').classList.toggle('active', s === 'over');
+    pauseBtn.disabled = !(s === 'playing' || s === 'paused');
+}
+
+/* ───────── 점수 / 레벨 ───────── */
+function addScore(n) {
+    score += n;
+    const nl = 1 + Math.floor(score / 5);
+    if (nl > level) {
+        level = nl;
+        stepMs = stepForLevel(level);
+        toast = { text: 'LEVEL ' + level, t: 1200 };
+    }
+    updateUI();
+}
+
+/* ───────── 파티클 ───────── */
+function burst(cx, cy, color, n) {
+    for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const v = 60 + Math.random() * 230;
         particles.push({
-            x: x * CELL + CELL / 2,
-            y: y * CELL + CELL / 2,
-            vx: (Math.random() - 0.5) * 6,
-            vy: (Math.random() - 0.5) * 6,
-            life: 20 + Math.random() * 15,
-            color: color,
-            size: 2 + Math.random() * 3
+            x: (cx + 0.5) * CELL, y: (cy + 0.5) * CELL,
+            vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+            life: 500 + Math.random() * 400, max: 900,
+            color, size: 2 + Math.random() * 4
         });
     }
 }
 
-function update() {
-    if (paused) return;
+/* ───────── 한 칸 이동 (로직) ───────── */
+function tick() {
+    if (queue.length) dir = queue.shift();
 
-    dir = { ...nextDir };
     const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+    const willEat = !!food && head.x === food.x && head.y === food.y;
 
-    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) return gameOver();
-    if (snake.some(s => s.x === head.x && s.y === head.y)) return gameOver();
+    let hit = head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS;
+    if (!hit) {
+        // 먹지 않으면 꼬리가 비켜주므로 꼬리 칸은 충돌로 보지 않음
+        const bodyLen = willEat ? snake.length : snake.length - 1;
+        for (let i = 0; i < bodyLen; i++) {
+            if (snake[i].x === head.x && snake[i].y === head.y) { hit = true; break; }
+        }
+    }
+    if (hit) return endRun(false);
 
+    prev = snake.map(c => ({ x: c.x, y: c.y }));
     snake.unshift(head);
 
-    let ate = false;
-    if (head.x === food.x && head.y === food.y) {
-        score++;
-        ate = true;
-        spawnParticles(food.x, food.y, '#ff4444', 10);
-        placeFood();
-        if (score % 5 === 0) {
-            level++;
-            speed = Math.max(50, speed - 10);
-            clearInterval(gameLoop);
-            gameLoop = setInterval(update, speed);
-        }
-        updateUI();
+    if (willEat) {
+        prev.push({ x: prev[prev.length - 1].x, y: prev[prev.length - 1].y });  // 새 꼬리는 제자리에서 자라남
+        burst(head.x, head.y, '#ff5566', 12);
+        eaten++;
+        addScore(1);
+        if (!placeFood()) return endRun(true);      // 판이 가득 참 = 클리어
+        if (eaten % 4 === 0) spawnSpecial();
     } else {
         snake.pop();
     }
 
-    if (specialFood) {
-        if (head.x === specialFood.x && head.y === specialFood.y) {
-            score += 3;
-            spawnParticles(specialFood.x, specialFood.y, '#ff00ff', 15);
-            specialFood = null;
-            updateUI();
-        } else {
-            specialFood.timer--;
-            if (specialFood.timer <= 0) specialFood = null;
-        }
+    if (special && head.x === special.x && head.y === special.y) {
+        burst(special.x, special.y, '#ff66ff', 18);
+        special = null;
+        addScore(3);
     }
-
-    particles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        p.vx *= 0.95;
-        p.vy *= 0.95;
-    });
-    particles = particles.filter(p => p.life > 0);
-
-    draw();
 }
 
-function draw() {
-    ctx.fillStyle = '#111133';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i <= COLS; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * CELL, 0);
-        ctx.lineTo(i * CELL, canvas.height);
-        ctx.stroke();
+function endRun(isWin) {
+    won = isWin;
+    lastAlpha = 0;
+    prev = snake.map(c => ({ x: c.x, y: c.y }));
+    newRecord = score > highScore;
+    if (newRecord) {
+        highScore = score;
+        try { localStorage.setItem('snakeHighScore', String(highScore)); } catch (e) {}
     }
-    for (let i = 0; i <= ROWS; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, i * CELL);
-        ctx.lineTo(canvas.width, i * CELL);
-        ctx.stroke();
-    }
+    if (!isWin) { burst(snake[0].x, snake[0].y, '#ff5566', 26); shake = 1; }
+    deathTimer = isWin ? 400 : 750;
+    updateUI();
+    setState('dying');
+}
 
-    snake.forEach((seg, i) => {
-        const ratio = 1 - (i / snake.length) * 0.6;
-        if (i === 0) {
-            ctx.fillStyle = '#00ff88';
-            ctx.shadowColor = '#00ff88';
-            ctx.shadowBlur = 12;
-        } else {
-            const g = Math.floor(180 * ratio);
-            const b = Math.floor(60 * ratio);
-            ctx.fillStyle = `rgb(0, ${g}, ${b})`;
-            ctx.shadowBlur = 0;
+function finish() {
+    $('finalScore').textContent = score;
+    $('overTitle').textContent = won ? '🏆 완벽 클리어!' : '💀 게임 오버';
+    $('newHighMsg').style.display = newRecord ? 'block' : 'none';
+    setState('over');
+}
+
+/* ───────── 프레임 업데이트 ───────── */
+function update(dt) {
+    if (state !== 'paused') {
+        const f = Math.pow(0.02, dt / 1000);
+        for (const p of particles) {
+            p.x += p.vx * dt / 1000;
+            p.y += p.vy * dt / 1000;
+            p.vx *= f; p.vy *= f;
+            p.life -= dt;
         }
-        const padding = i === 0 ? 1 : 2;
-        ctx.beginPath();
-        ctx.roundRect(seg.x * CELL + padding, seg.y * CELL + padding, CELL - padding * 2, CELL - padding * 2, 4);
-        ctx.fill();
-    });
-    ctx.shadowBlur = 0;
-
-    if (snake.length > 0) {
-        const h = snake[0];
-        ctx.fillStyle = '#003322';
-        const eyeSize = 3;
-        let e1x, e1y, e2x, e2y;
-        if (dir.x === 1) { e1x = h.x * CELL + 14; e1y = h.y * CELL + 6; e2x = h.x * CELL + 14; e2y = h.y * CELL + 14; }
-        else if (dir.x === -1) { e1x = h.x * CELL + 6; e1y = h.y * CELL + 6; e2x = h.x * CELL + 6; e2y = h.y * CELL + 14; }
-        else if (dir.y === -1) { e1x = h.x * CELL + 6; e1y = h.y * CELL + 6; e2x = h.x * CELL + 14; e2y = h.y * CELL + 6; }
-        else { e1x = h.x * CELL + 6; e1y = h.y * CELL + 14; e2x = h.x * CELL + 14; e2y = h.y * CELL + 14; }
-        ctx.beginPath(); ctx.arc(e1x, e1y, eyeSize, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(e2x, e2y, eyeSize, 0, Math.PI * 2); ctx.fill();
+        particles = particles.filter(p => p.life > 0);
+        if (toast) { toast.t -= dt; if (toast.t <= 0) toast = null; }
+        if (shake > 0) shake = Math.max(0, shake - dt / 500);
     }
 
-    ctx.shadowColor = '#ff4444';
-    ctx.shadowBlur = 15;
-    ctx.fillStyle = '#ff4444';
+    if (state === 'playing') {
+        acc += dt;
+        while (acc >= stepMs && state === 'playing') { acc -= stepMs; tick(); }
+        if (state === 'playing') lastAlpha = Math.min(acc / stepMs, 1);
+        if (special) { special.left -= dt; if (special.left <= 0) special = null; }
+    } else if (state === 'dying') {
+        deathTimer -= dt;
+        if (deathTimer <= 0) finish();
+    }
+}
+
+/* ───────── 그리기 ───────── */
+function circle(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+
+function starPath(cx, cy, R, r) {
     ctx.beginPath();
-    ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL / 2 - 2, 0, Math.PI * 2);
-    ctx.fill();
+    for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 5;
+        const rad = i % 2 ? r : R;
+        const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+}
+
+function render() {
+    const s = canvas.width / W;
+    let ox = 0, oy = 0;
+    if (shake > 0.02) { ox = (Math.random() - 0.5) * 12 * shake; oy = (Math.random() - 0.5) * 12 * shake; }
+    ctx.setTransform(s, 0, 0, s, ox * s, oy * s);
+    ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
 
-    ctx.fillStyle = '#fff';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('●', food.x * CELL + CELL / 2, food.y * CELL + CELL / 2 + 3);
+    // 배경 (체크무늬)
+    ctx.fillStyle = '#111133';
+    ctx.fillRect(-20, -20, W + 40, H + 40);
+    ctx.fillStyle = 'rgba(255,255,255,0.028)';
+    for (let y = 0; y < ROWS; y++)
+        for (let x = 0; x < COLS; x++)
+            if ((x + y) & 1) ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
 
-    if (specialFood) {
-        const pulse = 0.8 + Math.sin(Date.now() / 100) * 0.2;
-        ctx.shadowColor = '#ff00ff';
-        ctx.shadowBlur = 20;
-        ctx.fillStyle = `rgba(255, 0, 255, ${pulse})`;
-        ctx.beginPath();
-        ctx.arc(specialFood.x * CELL + CELL / 2, specialFood.y * CELL + CELL / 2, CELL / 2 - 1, 0, Math.PI * 2);
+    const now = performance.now();
+
+    // 일반 먹이 (사과)
+    if (food) {
+        const cx = (food.x + 0.5) * CELL, cy = (food.y + 0.5) * CELL;
+        const pulse = 1 + Math.sin(now / 220) * 0.06;
+        ctx.shadowColor = '#ff4455'; ctx.shadowBlur = 14 * s;
+        ctx.fillStyle = '#ff4455';
+        circle(cx, cy + 1, CELL * 0.36 * pulse);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        circle(cx - 5, cy - 4, 3.5);
+        ctx.strokeStyle = '#7a4b1f'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(cx, cy - 9); ctx.lineTo(cx + 2, cy - 14); ctx.stroke();
+        ctx.fillStyle = '#3ddc84';
+        ctx.beginPath(); ctx.ellipse(cx + 7, cy - 12, 5, 2.6, -0.5, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // 보너스 먹이 (별 + 남은 시간 링)
+    if (special) {
+        const cx = (special.x + 0.5) * CELL, cy = (special.y + 0.5) * CELL;
+        const pulse = 1 + Math.sin(now / 110) * 0.1;
+        ctx.shadowColor = '#ff44ff'; ctx.shadowBlur = 18 * s;
+        ctx.fillStyle = '#ff66ff';
+        starPath(cx, cy, CELL * 0.48 * pulse, CELL * 0.22 * pulse);
         ctx.fill();
         ctx.shadowBlur = 0;
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillText('★', specialFood.x * CELL + CELL / 2, specialFood.y * CELL + CELL / 2 + 4);
+        ctx.strokeStyle = '#ffdd33'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(cx, cy, CELL * 0.56, -Math.PI / 2, -Math.PI / 2 + (special.left / special.total) * Math.PI * 2);
+        ctx.stroke();
     }
 
-    particles.forEach(p => {
-        ctx.globalAlpha = p.life / 35;
+    // 지렁이 (칸 사이를 보간해서 부드럽게)
+    if (snake && snake.length) {
+        const a = lastAlpha;
+        const pts = snake.map((c, i) => {
+            const p = prev[i] || c;
+            return { x: (p.x + (c.x - p.x) * a + 0.5) * CELL, y: (p.y + (c.y - p.y) * a + 0.5) * CELL };
+        });
+        const n = pts.length;
+        const denom = Math.max(1, n - 1);
+
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (let i = n - 1; i >= 1; i--) {
+            const t = i / denom;
+            ctx.strokeStyle = 'hsl(' + (152 - 28 * t) + ', 78%, ' + (50 - 17 * t) + '%)';
+            ctx.lineWidth = CELL * (0.84 - 0.3 * t);
+            ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[i - 1].x, pts[i - 1].y); ctx.stroke();
+        }
+        // 몸통 윗면 하이라이트
+        for (let i = n - 1; i >= 1; i--) {
+            const t = i / denom;
+            ctx.strokeStyle = 'rgba(255,255,255,0.13)';
+            ctx.lineWidth = CELL * (0.28 - 0.1 * t);
+            ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y - 3); ctx.lineTo(pts[i - 1].x, pts[i - 1].y - 3); ctx.stroke();
+        }
+
+        // 머리
+        const h = pts[0];
+        const dying = state === 'dying' && !won;
+        ctx.shadowColor = dying ? '#ff4444' : '#00ff88'; ctx.shadowBlur = 14 * s;
+        ctx.fillStyle = dying ? '#ff7777' : '#4dffa8';
+        circle(h.x, h.y, CELL * 0.47);
+        ctx.shadowBlur = 0;
+
+        // 눈
+        const fx = dir.x, fy = dir.y, px = -dir.y, py = dir.x;
+        for (const side of [-1, 1]) {
+            const ex = h.x + fx * CELL * 0.14 + px * CELL * 0.22 * side;
+            const ey = h.y + fy * CELL * 0.14 + py * CELL * 0.22 * side;
+            ctx.fillStyle = '#fff'; circle(ex, ey, CELL * 0.14);
+            ctx.fillStyle = '#062b1a'; circle(ex + fx * 2, ey + fy * 2, CELL * 0.075);
+        }
+    }
+
+    // 파티클
+    for (const p of particles) {
+        ctx.globalAlpha = Math.max(0, p.life / p.max);
         ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-    });
+        circle(p.x, p.y, p.size);
+    }
     ctx.globalAlpha = 1;
 
-    if (paused) {
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#00ff88';
-        ctx.font = 'bold 32px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('⏸ 일시정지', canvas.width / 2, canvas.height / 2);
-        ctx.font = '16px sans-serif';
-        ctx.fillStyle = '#aaa';
-        ctx.fillText('P 키를 눌러 계속하기', canvas.width / 2, canvas.height / 2 + 30);
+    // 레벨업 문구
+    if (toast) {
+        ctx.globalAlpha = Math.min(1, toast.t / 400);
+        ctx.font = '800 46px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const y = H / 2 - (1 - toast.t / 1200) * 40;
+        ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineJoin = 'round';
+        ctx.strokeText(toast.text, W / 2, y);
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillText(toast.text, W / 2, y);
+        ctx.globalAlpha = 1;
     }
 }
 
-function gameOver() {
-    clearInterval(gameLoop);
-    gameLoop = null;
-    const isNew = score > highScore;
-    if (isNew) {
-        highScore = score;
-        localStorage.setItem('snakeHighScore', highScore);
-        updateUI();
-    }
-    document.getElementById('finalScore').textContent = score;
-    document.getElementById('newHighMsg').style.display = isNew ? 'block' : 'none';
-    document.getElementById('gameOverOverlay').classList.add('active');
+/* ───────── 메인 루프 ───────── */
+let last = performance.now();
+function frame(now) {
+    const dt = Math.min(now - last, 100);   // 탭 전환 후 순간이동 방지
+    last = now;
+    update(dt);
+    render();
+    requestAnimationFrame(frame);
 }
 
-function startGame() {
-    document.getElementById('startOverlay').classList.remove('active');
-    document.getElementById('gameOverOverlay').classList.remove('active');
-    init();
-    draw();
-    gameLoop = setInterval(update, speed);
-}
-
+/* ───────── 조작 ───────── */
 function setDir(x, y) {
-    if (x === -dir.x && y === 0 && dir.x !== 0) return;
-    if (y === -dir.y && x === 0 && dir.y !== 0) return;
-    nextDir = { x, y };
+    if (state !== 'playing') return;
+    const ref = queue.length ? queue[queue.length - 1] : dir;   // 마지막으로 예약된 방향 기준
+    if (x === ref.x && y === ref.y) return;                      // 같은 방향
+    if (x === -ref.x && y === -ref.y) return;                    // 정반대 방향(자기 몸으로 U턴 방지)
+    if (queue.length >= 3) return;
+    queue.push({ x, y });
 }
 
+function start() {
+    if (state !== 'ready' && state !== 'over') return;
+    init();
+    setState('playing');
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+}
+function pause()  { if (state === 'playing') setState('paused'); }
+function resume() { if (state === 'paused')  { setState('playing'); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } }
+function togglePause() { state === 'playing' ? pause() : resume(); }
+
+// 키보드 (한글 입력 상태에서도 WASD가 먹도록 e.code 사용)
 document.addEventListener('keydown', e => {
-    switch (e.key) {
-        case 'ArrowUp':    case 'w': case 'W': e.preventDefault(); setDir(0, -1); break;
-        case 'ArrowDown':  case 's': case 'S': e.preventDefault(); setDir(0, 1);  break;
-        case 'ArrowLeft':  case 'a': case 'A': e.preventDefault(); setDir(-1, 0); break;
-        case 'ArrowRight': case 'd': case 'D': e.preventDefault(); setDir(1, 0);  break;
-        case 'p': case 'P':
-            if (gameLoop) { paused = !paused; draw(); }
-            break;
+    let d = null;
+    switch (e.code) {
+        case 'ArrowUp':    case 'KeyW': d = [0, -1]; break;
+        case 'ArrowDown':  case 'KeyS': d = [0, 1];  break;
+        case 'ArrowLeft':  case 'KeyA': d = [-1, 0]; break;
+        case 'ArrowRight': case 'KeyD': d = [1, 0];  break;
+    }
+    if (d) { e.preventDefault(); setDir(d[0], d[1]); return; }
+
+    if (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter') {
+        e.preventDefault();
+        if (e.repeat) return;
+        if (state === 'ready' || state === 'over') start();
+        else if (state === 'paused') resume();
+        else if (state === 'playing' && e.code === 'Space') pause();
+    } else if (e.code === 'KeyP' || e.code === 'Escape') {
+        if (!e.repeat) togglePause();
     }
 });
 
-let touchStartX = 0, touchStartY = 0;
-canvas.addEventListener('touchstart', e => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-});
-canvas.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    const dy = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+// 화면 스와이프: 손가락이 움직이는 즉시 방향 전환 (떼기를 기다리지 않음)
+let tx = 0, ty = 0, tracking = false;
+document.addEventListener('touchstart', e => {
+    if (e.target.closest('button')) { tracking = false; return; }
+    const t = e.touches[0];
+    tx = t.clientX; ty = t.clientY; tracking = true;
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+    if (!tracking) return;
+    if (state === 'playing' && e.cancelable) e.preventDefault();
+    const t = e.touches[0];
+    const dx = t.clientX - tx, dy = t.clientY - ty;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 22) return;
     if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0);
     else setDir(0, dy > 0 ? 1 : -1);
+    tx = t.clientX; ty = t.clientY;     // 이어서 스와이프해도 연속 인식
+}, { passive: false });
+document.addEventListener('touchend', () => { tracking = false; });
+document.addEventListener('touchcancel', () => { tracking = false; });
+
+// 화면 방향키 (누르는 순간 바로 반응)
+document.querySelectorAll('.dpad button').forEach(b => {
+    const [x, y] = b.dataset.dir.split(',').map(Number);
+    b.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        b.classList.add('pressed');
+        setDir(x, y);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
+        b.addEventListener(ev, () => b.classList.remove('pressed')));
+    b.addEventListener('contextmenu', e => e.preventDefault());
 });
 
-document.getElementById('startBtn').addEventListener('click', startGame);
-document.getElementById('restartBtn').addEventListener('click', startGame);
+$('startBtn').addEventListener('click', start);
+$('restartBtn').addEventListener('click', start);
+$('resumeBtn').addEventListener('click', resume);
+pauseBtn.addEventListener('click', togglePause);
 
+// 다른 탭/앱으로 나가면 자동 일시정지
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+window.addEventListener('blur', pause);
+
+/* ───────── 시작 ───────── */
 init();
-draw();
+setState('ready');
+resizeCanvas();
+requestAnimationFrame(frame);
+})();
 </script>
 
 </body>
